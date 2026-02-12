@@ -56,24 +56,24 @@ FIELD_PLACEHOLDER_REPLACE = {
     "[Valor p/ Forma de Pagamento]": "valorFormaPagamento",
 }
 
-# Campos que recebem o mesmo valor calculado (Valor Total); todas as células com esse texto são preenchidas
+# Campos que recebem o valor parcelado em 10x (total + 10%); todas as células com esse texto são preenchidas
 FIELD_TOTAL_LABEL = "[Valor Total]"
 
 # Célula fixa que recebe o texto de especificação (sempre D43, primeira planilha)
 D43_CELL = "D43"
 
-# Template do texto de especificação (formatação fixa). Placeholders: [Medidas da Cobertura], [Tipo de Cobertura], [Pintura da Cobertura], [Espessura da Telha Térmica], [Tipo do Forro].
-# Regra Item 3: se não tiver pilar, o bloco do Item 3 é removido e os itens 4–7 passam a 3–6.
+# Template do texto de especificação. Placeholders: [Medidas da Cobertura], [Tipo de Cobertura], [Pintura da Cobertura], [Espessura da Telha Térmica], [Tipo do Forro].
+# Regra Item 3 (situacional): se temPilar != "Sim", remove o bloco "Item 3: Pilar metálico..." e renumera 4->3, 5->4, 6->5, 7->6.
 TEXTO_ESPECIFICACAO_TEMPLATE = """Cobertura Premium medidas [Medidas da Cobertura]
 
 Item 1: Treliça metálica com 40 cm de altura. 
 Detalhamento de fabricação: Banzos superior e inferior em perfil U simples 75x40 #14, montantes e diagonais em perfil U simples 68x30 #14. A treliça contorna toda estrutura sendo o objeto principal de estruturação da cobertura.
 
 Item 2: Revestimento das treliças em [Tipo de Cobertura] [Pintura da Cobertura].
-                                                                                           
+
 Item 3: Pilar metálico de 100x100 #14.
 
-Item 4: Vigas metálicas e terças metálicas em metalon 50 x 50 #18. Esse item está locado na parte interna da cobertura para receber telhas térmicas e calha. 
+Item 4: Vigas metálicas e terças metálicas em metalon 50 x 50 #18. Esse item está locado na parte interna da cobertura para receber telhas térmicas e calha.
 
 Item 5: Telha térmica EPS de [Espessura da Telha Térmica] com acabamento em filme para dar resistência na instalação e não ocorrer o desplacamento do EPS.
 
@@ -90,8 +90,8 @@ D43_PLACEHOLDERS = {
     "[Tipo do Forro]": "forroPvc",
 }
 
-# Bloco do Item 3; removido quando temPilar != "Sim"
-ITEM_3_BLOCO = "\nItem 3: Pilar metálico de 100x100 #14.\n\n"
+# Bloco do Item 3 (pilar); removido quando temPilar != "Sim". \n explícitos para garantir match.
+ITEM_3_BLOCO = "\n\nItem 3: Pilar metálico de 100x100 #14.\n\n"
 
 
 def build_texto_especificacao_d43(data: dict) -> str:
@@ -106,12 +106,18 @@ def build_texto_especificacao_d43(data: dict) -> str:
 
     tem_pilar = (data.get("temPilar") or "").strip() == "Sim"
     if not tem_pilar:
-        text = text.replace(ITEM_3_BLOCO, "")
-        # Renumera: Item 7 -> 6, Item 6 -> 5, Item 5 -> 4, Item 4 -> 3 (ordem para não sobrescrever)
-        text = text.replace("Item 7:", "Item 6:")
-        text = text.replace("Item 6:", "Item 5:")
-        text = text.replace("Item 5:", "Item 4:")
-        text = text.replace("Item 4:", "Item 3:")
+        # Remove só a linha do pilar, mantendo \n\n entre Item 2 e o que vira Item 3 (evita "Preto.Item 4:" grudado)
+        bloco_completo = "\n\nItem 3: Pilar metálico de 100x100 #14.\n\n"
+        substitui_por = "\n\n"  # preserva parágrafo entre Item 2 e Item 3
+        if bloco_completo in text:
+            text = text.replace(bloco_completo, substitui_por)
+        else:
+            text = text.replace("\n\nItem 3: Pilar metálico de 100x100 #14.\n\n", substitui_por)
+        # Renumera em uma única passada: Item 4->3, 5->4, 6->5, 7->6
+        def _renum(match):
+            n = int(match.group(1))
+            return "\nItem {}:".format(n - 1)
+        text = re.sub(r"\nItem ([4-7]):", _renum, text)
 
     return text
 
@@ -414,14 +420,17 @@ def main() -> int:
             cell.value = new_text
             _log(f"Placeholder substituído: '{placeholder_text}' -> '{value_str}'; célula agora: '{new_text}'")
 
-        # Valor Total: m² * valor/m² + valor pilar + custo deslocamento; preencher todas as células "[Valor Total]"
-        valor_total_str = compute_valor_total(data)
-        _log(f"Valor Total calculado: m² * valor/m² + pilar + deslocamento = '{valor_total_str}'")
+        # Valor nas 3 células "[Valor Total]": usar valor parcelado em 10x (total à vista + 10%), não à vista
+        total_a_vista_reais = get_valor_total_reais(data)
+        valor_10x_reais = total_a_vista_reais * (1 + CARTAO_10X_ACRECIMO)
+        valor_10x_cents = int(round(valor_10x_reais * 100))
+        valor_10x_str = format_currency(str(valor_10x_cents))
+        _log(f"Valor em 10x (para células [Valor Total]): total à vista={total_a_vista_reais} -> 10x = '{valor_10x_str}'")
         total_cells = find_all_cells_by_text(wb, FIELD_TOTAL_LABEL)
         _log(f"Células com '{FIELD_TOTAL_LABEL}': {len(total_cells)} encontrada(s)")
         for sheet, address in total_cells:
             cell = sheet.range(address)
-            cell.value = valor_total_str
+            cell.value = valor_10x_str
             try:
                 cell.number_format = "R$ #.##0,00"
             except Exception:
@@ -430,8 +439,24 @@ def main() -> int:
 
         # Texto de especificação na célula D43 (primeira planilha), com placeholders substituídos e regra do Item 3
         texto_d43 = build_texto_especificacao_d43(data)
+        # No Windows o Excel reconhece \r\n para quebra de linha na célula; só \n pode não exibir
+        texto_d43_excel = texto_d43.replace("\n", "\r\n")
         sheet_d43 = wb.sheets[0]
-        sheet_d43.range(D43_CELL).value = texto_d43
+        cell_d43 = sheet_d43.range(D43_CELL)
+        cell_d43.value = texto_d43_excel
+        try:
+            cell_d43.api.WrapText = True
+        except Exception:
+            pass
+        # Negrito via API de caracteres do xlwings (slice 0-based), mais confiável que .api.Characters no Windows
+        try:
+            if texto_d43_excel.startswith("Cobertura Premium"):
+                cell_d43.characters[0:18].font.bold = True
+            for m in re.finditer(r"Item \d+:", texto_d43_excel):
+                cell_d43.characters[m.start() : m.end()].font.bold = True
+            _log("Negrito aplicado a 'Cobertura Premium' e aos 'Item N:' na célula D43.")
+        except Exception as fmt_err:
+            _log(f"Negrito D43 não aplicado (ignorado): {fmt_err}")
         _log(f"Célula {D43_CELL} preenchida com texto de especificação (planilha '{sheet_d43.name}').")
 
         output_path.parent.mkdir(parents=True, exist_ok=True)

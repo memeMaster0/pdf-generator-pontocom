@@ -87,40 +87,42 @@ function createWindow(): void {
 
     const args = ['--template', templatePath, '--data', dataPath, '--output', outputPath];
 
-    if (fs.existsSync(exePath)) {
-      const result = await runExe(exePath, args);
+    const runAndOpen = (result: { success: boolean; error?: string }) => {
       if (result.success) {
-        const { shell } = await import('electron');
-        shell.openPath(outputPath).catch(() => {});
+        import('electron').then(({ shell }) => shell.openPath(outputPath).catch(() => {}));
         return { success: true, path: outputPath };
       }
       return { success: false, error: result.error || 'Erro ao gerar PDF.' };
-    }
+    };
 
-    // App empacotado: não usar Python (o .py não vem no instalador)
-    if (app.isPackaged) {
+    // Em desenvolvimento (não empacotado): priorizar o script Python para sempre usar o código atual
+    if (!app.isPackaged) {
+      let lastError = '';
+      const pythonCommands = process.platform === 'win32' ? ['py', 'python'] : ['python3', 'python'];
+      for (const py of pythonCommands) {
+        const pyArgs = py === 'py' ? ['-3', scriptPath] : [scriptPath];
+        const result = await runExe(py, [...pyArgs, ...args]);
+        if (result.success) return runAndOpen(result);
+        lastError = result.error ?? lastError;
+      }
+      if (fs.existsSync(exePath)) {
+        const result = await runExe(exePath, args);
+        return runAndOpen(result);
+      }
       return {
         success: false,
-        error: 'Gerador de PDF não encontrado. Reinstale o aplicativo ou entre em contato com o suporte.',
+        error: lastError || 'Gerador de PDF não encontrado. Instale Python ou gere o .exe com: cd pdf_export && pyinstaller fill_and_export_pdf.spec',
       };
     }
 
-    let lastError = '';
-    const pythonCommands = process.platform === 'win32' ? ['py', 'python'] : ['python3', 'python'];
-    for (const py of pythonCommands) {
-      const pyArgs = py === 'py' ? ['-3', scriptPath] : [scriptPath];
-      const result = await runExe(py, [...pyArgs, ...args]);
-      if (result.success) {
-        const { shell } = await import('electron');
-        shell.openPath(outputPath).catch(() => {});
-        return { success: true, path: outputPath };
-      }
-      lastError = result.error ?? lastError;
+    // App empacotado: só o .exe está disponível
+    if (fs.existsSync(exePath)) {
+      const result = await runExe(exePath, args);
+      return runAndOpen(result);
     }
-
     return {
       success: false,
-      error: lastError || 'Gerador de PDF não encontrado. Gere o .exe com: cd pdf_export && pyinstaller fill_and_export_pdf.spec',
+      error: 'Gerador de PDF não encontrado. Reinstale o aplicativo ou entre em contato com o suporte.',
     };
   });
 

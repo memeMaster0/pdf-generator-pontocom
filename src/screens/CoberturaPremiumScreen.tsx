@@ -246,6 +246,15 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
             onChange={setCustoDeslocamento}
             placeholder="0,00"
             hint="R$ 200,00"
+            suffix={
+              <button
+                type="button"
+                onClick={() => setCustoDeslocamento('0')}
+                className="shrink-0 self-stretch flex items-center px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] text-sm font-medium transition-colors"
+              >
+                Sem custo
+              </button>
+            }
           />
 
           <button

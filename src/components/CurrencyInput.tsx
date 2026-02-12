@@ -7,6 +7,8 @@ interface CurrencyInputProps {
   placeholder?: string;
   hint?: string;
   id?: string;
+  /** Elemento opcional à direita do input (ex.: botão "Sem custo"), alinhado com o campo */
+  suffix?: React.ReactNode;
 }
 
 function formatCurrencyDisplay(raw: string): string {
@@ -24,6 +26,7 @@ export function CurrencyInput({
   placeholder = '0,00',
   hint,
   id,
+  suffix,
 }: CurrencyInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -56,19 +59,22 @@ export function CurrencyInput({
       <label htmlFor={id} className="text-sm font-medium text-white">
         {label}
       </label>
-      <div className="flex items-center rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] focus-within:border-[var(--color-accent)] focus-within:ring-2 focus-within:ring-[var(--color-accent)] focus-within:ring-opacity-30 transition-all">
-        <span className="pl-4 text-[var(--color-text-muted)] font-medium">R$</span>
-        <input
-          ref={inputRef}
-          id={id}
-          type="text"
-          inputMode="numeric"
-          value={displayValue}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className="flex-1 py-3 pr-4 pl-2 bg-transparent text-white placeholder-[var(--color-text-muted)] focus:outline-none min-w-0"
-        />
+      <div className="flex gap-2 items-stretch">
+        <div className="flex-1 min-w-0 flex items-center rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] focus-within:border-[var(--color-accent)] focus-within:ring-2 focus-within:ring-[var(--color-accent)] focus-within:ring-opacity-30 transition-all">
+          <span className="pl-4 text-[var(--color-text-muted)] font-medium">R$</span>
+          <input
+            ref={inputRef}
+            id={id}
+            type="text"
+            inputMode="numeric"
+            value={displayValue}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            className="flex-1 py-3 pr-4 pl-2 bg-transparent text-white placeholder-[var(--color-text-muted)] focus:outline-none min-w-0"
+          />
+        </div>
+        {suffix}
       </div>
       {hint && (
         <p className="text-xs text-[var(--color-text-muted)]">Ex: {hint}</p>

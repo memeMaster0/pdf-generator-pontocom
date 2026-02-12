@@ -43,7 +43,7 @@ export function ClienteScreen({ nomeOrcamento, onBack, onConfirm }: ClienteScree
   const handleCelularChange = (e: React.ChangeEvent<HTMLInputElement>) => setCelularFone(formatarTelefone(e.target.value));
 
   const okNome = nome.trim().length > 0;
-  const okCpfCnpj = validarCpfCnpj(cpfCnpj);
+  const okCpfCnpj = !cpfCnpj.trim() || validarCpfCnpj(cpfCnpj); // vazio = ok; se preenchido, deve ser válido
   const okCidade = cidade.trim().length > 0;
   const okCelular = validarTelefone(celularFone);
   const okEndereco = endereco.trim().length > 0;
@@ -120,7 +120,7 @@ export function ClienteScreen({ nomeOrcamento, onBack, onConfirm }: ClienteScree
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label htmlFor="cliente-cpfcnpj" className="block text-sm font-medium text-white mb-2">
-              CPF/CNPJ
+              CPF/CNPJ <span className="text-[var(--color-text-muted)] font-normal">(opcional)</span>
             </label>
             <input
               id="cliente-cpfcnpj"
@@ -132,7 +132,7 @@ export function ClienteScreen({ nomeOrcamento, onBack, onConfirm }: ClienteScree
               aria-invalid={formTouched && !okCpfCnpj}
             />
             {formTouched && !okCpfCnpj && (
-              <p className="mt-1 text-xs text-amber-400">CPF (11 dígitos) ou CNPJ (14 dígitos)</p>
+              <p className="mt-1 text-xs text-amber-400">Se informado: CPF (11 dígitos) ou CNPJ (14 dígitos)</p>
             )}
           </div>
           <div>
