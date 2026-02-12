@@ -1,98 +1,98 @@
-# Cobertura Premium
+# PDF Generator
 
-Aplicativo desktop para orçamento de Cobertura Premium (Electron + React + TypeScript). Interface dark com acento em amarelo.
+Desktop app for **generating complete PDFs** for a metallurgy company. The goal is to **streamline the sales team's workflow**: from quote setup and client data entry to exporting a ready-to-send proposal as PDF. Built with Electron + React + TypeScript; dark UI with yellow accents.
 
-## Requisitos
+## Requirements
 
-- **Node.js** (versão LTS recomendada, ex.: 20.x ou 22.x) — necessário para instalar dependências e rodar o projeto.
-- **Para gerar PDF** (usuário final): **Microsoft Excel** instalado no Windows. O gerador de PDF é um .exe incluído no app — **não é necessário instalar Python** no PC do usuário.
+- **Node.js** (LTS recommended, e.g. 20.x or 22.x) — required to install dependencies and run the project.
+- **To generate PDF** (end user): **Microsoft Excel** installed on Windows. The PDF generator is a bundled .exe — **Python does not need to be installed** on the user's machine.
 
-## Instalação do Node.js no Windows
+## Installing Node.js on Windows
 
-1. Acesse o site oficial: **[https://nodejs.org](https://nodejs.org)**  
-2. Baixe a versão **LTS** (recomendada para a maioria dos usuários).  
-3. Execute o instalador (`.msi`) e siga as etapas.  
-   - Marque a opção **"Automatically install the necessary tools"** se aparecer (inclui ferramentas úteis).  
-   - Reinicie o terminal (ou o computador) após a instalação.  
-4. Confirme a instalação abrindo um novo **PowerShell** ou **Prompt de Comando** e digitando:
+1. Go to the official site: **[https://nodejs.org](https://nodejs.org)**  
+2. Download the **LTS** version (recommended for most users).  
+3. Run the installer (`.msi`) and follow the steps.  
+   - If prompted, check **"Automatically install the necessary tools"** (includes useful tools).  
+   - Restart the terminal (or computer) after installation.  
+4. Confirm installation by opening a new **PowerShell** or **Command Prompt** and running:
 
    ```bash
    node -v
    npm -v
    ```
 
-   Deve aparecer a versão do Node (ex.: `v20.10.0`) e do npm (ex.: `10.2.0`).
+   You should see the Node version (e.g. `v20.10.0`) and npm version (e.g. `10.2.0`).
 
-## Geração de PDF (sem instalar Python no PC do usuário)
+## PDF generation (no Python on the user's machine)
 
-O app usa um **.exe empacotado** que preenche o Excel e exporta para PDF. O usuário **não precisa instalar Python**.
+The app uses a **bundled .exe** that fills the Excel template and exports to PDF. End users **do not need Python**.
 
-- **No PC do usuário**: basta ter **Microsoft Excel** instalado (Windows). O instalador do app já inclui o gerador (`fill_and_export_pdf.exe`).
-- **Campos no Excel**: o modelo usa **placeholders** que são substituídos pelo script (ex.: `[Nome do Cliente]`, `[Data Atual]`, `[Valor Total]`, `[Valor p/ Forma de Pagamento]`). A lista completa e o mapeamento estão em `pdf_export/fill_and_export_pdf.py` (`FIELD_PLACEHOLDER_REPLACE` e demais constantes).
-- **Modelo**: o arquivo **`PROPOSTA  - COBERTURA PREMIUM.xlsx`** deve estar na pasta **`resources/`** do projeto (e é copiado para o instalador).
+- **On the user's PC**: only **Microsoft Excel** is required (Windows). The app installer includes the generator (`fill_and_export_pdf.exe`).
+- **Excel fields**: the template uses **placeholders** replaced by the script (e.g. `[Nome do Cliente]`, `[Data Atual]`, `[Valor Total]`, `[Valor p/ Forma de Pagamento]`). The full list and mapping are in `pdf_export/fill_and_export_pdf.py` (`FIELD_PLACEHOLDER_REPLACE` and related constants).
+- **Template**: the file **`PROPOSTA  - COBERTURA PREMIUM.xlsx`** must be in the project's **`resources/`** folder (it is copied into the installer).
 
-### Para quem for gerar o instalador (.exe do app)
+### Building the installer (.exe)
 
-É necessário ter **Python** instalado na máquina (só para gerar o instalador). Um único comando faz tudo:
+**Python** is required on the machine only to build the installer. A single command does everything:
 
 ```bash
 npm run electron:build:win
 ```
 
-Ele executa, em sequência: geração do ícone (`build/icon.ico`), build do gerador de PDF (`pdf_export/build_exe.bat` → `pdf_export/dist/fill_and_export_pdf.exe`), compilação do Electron e do frontend, e empacotamento com electron-builder. O instalador e o .exe portátil saem em `release/`.
+It runs, in order: icon generation (`build/icon.ico`), PDF generator build (`pdf_export/build_exe.bat` → `pdf_export/dist/fill_and_export_pdf.exe`), Electron and frontend build, and packaging with electron-builder. The installer and portable .exe are output to `release/`.
 
-Quem **instalar** o app não precisa ter Python — só o **Microsoft Excel** (para o gerador exportar o PDF).
+Anyone **installing** the app does not need Python — only **Microsoft Excel** (for the generator to export PDF).
 
-## Rodar o projeto
+## Running the project
 
-Depois de instalar o Node.js:
+After installing Node.js:
 
-1. Abra o terminal na pasta do projeto (`pdf_generator`).
+1. Open a terminal in the project folder (`pdf_generator`).
 
-2. Instale as dependências:
+2. Install dependencies:
 
    ```bash
    npm install
    ```
 
-3. Para **desenvolvimento** (abrir o app em modo dev):
+3. For **development** (run the app in dev mode):
 
    ```bash
    npm run electron:dev
    ```
 
-   O aplicativo Electron abrirá e a interface será carregada a partir do Vite (hot reload).
+   The Electron app will open and the UI will load from Vite (hot reload).
 
-4. Para **gerar o instalador/.exe** (Windows):
+4. To **build the installer/.exe** (Windows):
 
    ```bash
    npm run electron:build:win
    ```
 
-   O instalador e o executável portátil ficarão na pasta `release/`.
+   The installer and portable executable will be in the `release/` folder.
 
-## Scripts disponíveis
+## Available scripts
 
-| Script | Descrição |
-|--------|-----------|
-| `npm run electron:dev` | Sobe o app Electron em modo desenvolvimento (Vite + hot reload) |
-| `npm run electron:build:win` | Gera o instalador e o .exe portátil para Windows (ícones + PDF .exe + build) |
-| `npm run build` | Apenas build do frontend (TypeScript + Vite) |
-| `npm run dev` | Apenas servidor Vite (sem Electron) |
-| `npm run preview` | Preview do build do frontend |
-| `npm run build:icons` | Gera `build/icon.ico` a partir de `public/icon.svg` |
+| Script | Description |
+|--------|-------------|
+| `npm run electron:dev` | Runs the Electron app in development mode (Vite + hot reload) |
+| `npm run electron:build:win` | Builds the Windows installer and portable .exe (icons + PDF .exe + app build) |
+| `npm run build` | Frontend build only (TypeScript + Vite) |
+| `npm run dev` | Vite dev server only (no Electron) |
+| `npm run preview` | Preview the frontend build |
+| `npm run build:icons` | Generates `build/icon.ico` from `public/icon.svg` |
 
-## Estrutura do projeto
+## Project structure
 
-- **config/** — configurações de build (Vite, TypeScript, Tailwind, PostCSS).
-- **docs/** — documentação (`ORGANIZATION.md`, `VERIFICACAO.md`).
-- **electron/**, **src/**, **pdf_export/**, **public/**, **resources/**, **scripts/** — código e recursos.
-- Na raiz ficam apenas `package.json`, `index.html`, `README.md`, `.gitignore` e um `tsconfig.json` que aponta para `config/`.
-- Pastas geradas (`node_modules`, `dist`, `build`, `release`, etc.) ficam ocultas no Explorer (ver `.vscode/settings.json`).
+- **config/** — Build configuration (Vite, TypeScript, Tailwind, PostCSS).
+- **docs/** — Documentation (`ORGANIZATION.md`, `VERIFICACAO.md`).
+- **electron/**, **src/**, **pdf_export/**, **public/**, **resources/**, **scripts/** — Source code and assets.
+- The root contains only `package.json`, `index.html`, `README.md`, `.gitignore`, and a `tsconfig.json` that extends `config/`.
+- Generated folders (`node_modules`, `dist`, `build`, `release`, etc.) are hidden in the Explorer (see `.vscode/settings.json`).
 
-## Fluxo das telas
+## Screen flow
 
-1. **Home** — Botões: Cobertura Premium (ativo), Pergolado (em breve), Porta (inativo).
-2. **Cobertura Premium** — Seleção em 3 passos (Tipo → Tem Pilar → Cor/Pintura), depois formulário (medidas, valor/m², pilar, deslocamento).
-3. **Informações do Cliente** — Nome, CPF/CNPJ, endereço, cidade, celular/fone (formatados e validados).
-4. **Resumo** — Carrossel com resumo do orçamento e do cliente; botão **"Gerar PDF"** abre o diálogo para salvar e chama o gerador (.exe ou script Python em dev), que preenche o modelo Excel pelos placeholders e exporta para PDF via Excel.
+1. **Home** — Buttons: Cobertura Premium (active), Pergolado (coming soon), Porta (inactive).
+2. **Cobertura Premium** — Three-step selection (Type → Has pillar → Color/Paint), then form (dimensions, price/m², pillar, travel cost).
+3. **Client information** — Name, CPF/CNPJ, address, city, phone (formatted and validated).
+4. **Summary** — Carousel with quote and client summary; **"Generate PDF"** button opens the save dialog and runs the generator (.exe or Python script in dev), which fills the Excel template via placeholders and exports to PDF via Excel.
