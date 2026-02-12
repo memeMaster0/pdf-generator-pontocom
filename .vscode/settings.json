@@ -1,0 +1,12 @@
+{
+  "files.exclude": {
+    "**/node_modules": true,
+    "dist": true,
+    "dist-electron": true,
+    "build": true,
+    "release": true,
+    "pdf_export/build": true,
+    "pdf_export/dist": true,
+    "**/*.tsbuildinfo": true
+  }
+}

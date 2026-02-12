@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="doc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0c84a"/>
+      <stop offset="100%" style="stop-color:#e5b318"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <!-- Document shape with folded corner -->
+  <path d="M12 4h28l16 16v32a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4z" fill="url(#doc)" filter="url(#shadow)"/>
+  <path d="M40 4v12h12L40 4z" fill="#d4a015" opacity="0.9"/>
+  <!-- PDF text -->
+  <text x="32" y="42" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#0d0d0d" text-anchor="middle">PDF</text>
+</svg>

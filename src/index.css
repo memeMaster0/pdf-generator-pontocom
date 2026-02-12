@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #0d0d0d;
+  --color-bg-elevated: #1a1a1a;
+  --color-surface: #252525;
+  --color-surface-hover: #2d2d2d;
+  --color-border: #3d3d3d;
+  --color-text: #f5f5f5;
+  --color-text-muted: #a3a3a3;
+  --color-accent: #e5b318;
+  --color-accent-hover: #f5c518;
+  --color-accent-muted: rgba(229, 179, 24, 0.2);
+  --radius: 0.75rem;
+  --radius-lg: 1rem;
+  --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.25);
+  --transition: 0.2s ease;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: none; /* Firefox: scrollbar invisível */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* Chromium/Electron: scrollbar invisível */
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+input {
+  font-family: inherit;
+}
+
+input::placeholder {
+  color: var(--color-text-muted);
+}

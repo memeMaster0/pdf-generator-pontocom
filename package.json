@@ -1,0 +1,74 @@
+{
+  "name": "pdf-generator",
+  "private": true,
+  "version": "1.1.0",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite --config config/vite.config.ts",
+    "build": "tsc -b config/tsconfig.json && vite build --config config/vite.config.ts",
+    "preview": "vite preview --config config/vite.config.ts",
+    "electron:dev": "tsc -p config/tsconfig.electron.json && concurrently \"vite --config config/vite.config.ts\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "tsc -p config/tsconfig.electron.json && vite build --config config/vite.config.ts && electron-builder",
+    "build:icons": "node scripts/build-icons.js",
+    "electron:build:win": "npm run build:icons && call pdf_export\\build_exe.bat && tsc -p config/tsconfig.electron.json && vite build --config config/vite.config.ts && electron-builder --win"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "electron": "^40.2.1",
+    "electron-builder": "^26.7.0",
+    "postcss": "^8.4.32",
+    "svg-to-ico": "^1.0.17",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.3.3",
+    "vite": "^7.3.1",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.pdfgenerator.app",
+    "productName": "PDF Generator",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "pdf_export/dist/fill_and_export_pdf.exe",
+        "to": "pdf_export/fill_and_export_pdf.exe"
+      },
+      {
+        "from": "resources/PROPOSTA  - COBERTURA PREMIUM.xlsx",
+        "to": "resources/PROPOSTA  - COBERTURA PREMIUM.xlsx"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "build/icon.ico"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "./build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "./build/icon.ico",
+      "uninstallerIcon": "./build/icon.ico",
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true
+    }
+  }
+}

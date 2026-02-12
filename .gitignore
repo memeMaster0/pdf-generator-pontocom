@@ -1,0 +1,41 @@
+# Dependências
+node_modules/
+
+# Build do frontend (Vite)
+dist/
+
+# Build do Electron (TypeScript)
+dist-electron/
+
+# Ícone gerado (npm run build:icons)
+build/
+
+# Instalador e app desempacotado (electron-builder)
+release/
+
+# Build do gerador de PDF (PyInstaller)
+pdf_export/build/
+pdf_export/dist/
+
+# Logs e ambiente
+*.log
+.env
+.env.local
+.env.*.local
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Vite/tsconfig.node emit (config/vite.config.ts é fonte; .js/.d.ts em config/ são gerados)
+config/vite.config.js
+config/vite.config.d.ts
+
+# Electron: compilado vai para dist-electron/; evitar .js/.d.ts na pasta electron/
+electron/*.js
+electron/*.d.ts
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
