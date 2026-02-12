@@ -46,9 +46,8 @@ export function ClienteScreen({ nomeOrcamento, onBack, onConfirm }: ClienteScree
   const okCpfCnpj = !cpfCnpj.trim() || validarCpfCnpj(cpfCnpj); // vazio = ok; se preenchido, deve ser válido
   const okCidade = cidade.trim().length > 0;
   const okCelular = validarTelefone(celularFone);
-  const okEndereco = endereco.trim().length > 0;
 
-  const canSubmit = okNome && okCpfCnpj && okCidade && okCelular && okEndereco;
+  const canSubmit = okNome && okCpfCnpj && okCidade && okCelular; // endereço opcional
 
   const handleSubmit = () => {
     setFormTouched(true);
@@ -156,7 +155,7 @@ export function ClienteScreen({ nomeOrcamento, onBack, onConfirm }: ClienteScree
 
         <div>
           <label htmlFor="cliente-endereco" className="block text-sm font-medium text-white mb-2">
-            Endereço
+            Endereço <span className="text-[var(--color-text-muted)] font-normal">(opcional)</span>
           </label>
           <input
             id="cliente-endereco"
@@ -165,11 +164,7 @@ export function ClienteScreen({ nomeOrcamento, onBack, onConfirm }: ClienteScree
             onChange={(e) => setEndereco(e.target.value)}
             placeholder="Endereço completo"
             className={INPUT_CLASS}
-            aria-invalid={formTouched && !okEndereco}
           />
-          {formTouched && !okEndereco && (
-            <p className="mt-1 text-xs text-amber-400">Preencha o endereço</p>
-          )}
         </div>
 
         <button
