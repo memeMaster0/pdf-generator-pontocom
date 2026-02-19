@@ -51,6 +51,10 @@
         "to": "resources/PROPOSTA  - COBERTURA PREMIUM.xlsx"
       },
       {
+        "from": "resources/PROPOSTA  - PERGOLADO.xlsx",
+        "to": "resources/PROPOSTA  - PERGOLADO.xlsx"
+      },
+      {
         "from": "build/icon.ico",
         "to": "build/icon.ico"
       }

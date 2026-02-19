@@ -56,6 +56,21 @@ FIELD_PLACEHOLDER_REPLACE = {
     "[Valor p/ Forma de Pagamento]": "valorFormaPagamento",
 }
 
+# Placeholders para a planilha Pergolado (orçamento + mesmos de cliente/valores)
+FIELD_PLACEHOLDER_REPLACE_PERGOLADO = {
+    "[Medidas do Pergolado]": "medidas",
+    "[Dimensão do Tubo Retangular]": "dimensaoTubo",
+    "[Tipo do Policarbonato]": "tipoPolicarbonato",
+    "[Cor]": "corPolicarbonato",
+    "[Nome do Cliente]": "nomeCliente",
+    "[CPF/CPNJ]": "cpfCnpj",
+    "[Endereço]": "endereco",
+    "[Celular/Fone]": "celularFone",
+    "[Data Atual]": "dataAtual",
+    "[Cidade]": "cidade",
+    "[Valor p/ Forma de Pagamento]": "valorFormaPagamento",
+}
+
 # Campos que recebem o valor parcelado em 10x (total + 10%); todas as células com esse texto são preenchidas
 FIELD_TOTAL_LABEL = "[Valor Total]"
 
@@ -188,6 +203,33 @@ def get_valor_total_reais(data: dict) -> float:
     if forro_pvc == "Vinílico":
         total_reais += FORRO_VINILICO_VALOR_M2 * m2
 
+    return round(total_reais, 2)
+
+
+# Tabela fixa valor/m² para Pergolado (tipo policarbonato x dimensão tubo)
+PERGOLADO_VALOR_M2 = {
+    ("Compacto 3mm", "150 x 50"): 1300.0,
+    ("Compacto 3mm", "100 x 50"): 1200.0,
+    ("Alveolar 6mm", "150 x 50"): 800.0,
+    ("Alveolar 6mm", "100 x 50"): 700.0,
+}
+
+
+def get_valor_total_reais_pergolado(data: dict) -> float:
+    """
+    Valor total para Pergolado: m² × valor por m².
+    Se valorM2 veio no payload (dimensão manual), usa esse valor; senão usa a tabela fixa.
+    """
+    medidas_str = data.get("medidas") or ""
+    m2 = parse_medidas_m2(medidas_str)
+    valor_m2_raw = data.get("valorM2")
+    if valor_m2_raw and str(valor_m2_raw).strip():
+        valor_m2_reais = raw_to_reais(str(valor_m2_raw))
+    else:
+        tipo = (data.get("tipoPolicarbonato") or "").strip()
+        dimensao = (data.get("dimensaoTubo") or "").strip()
+        valor_m2_reais = PERGOLADO_VALOR_M2.get((tipo, dimensao), 0.0)
+    total_reais = m2 * valor_m2_reais
     return round(total_reais, 2)
 
 
@@ -348,8 +390,11 @@ def main() -> int:
     _hoje = datetime.now()
     data["dataAtual"] = f"{_hoje.day:02d}/{_hoje.month:02d}/{_hoje.year}"
 
-    # Valor p/ Forma de Pagamento: 5x (+6%), 10x (+10%) ou à vista (sempre preenchido)
-    data["valorFormaPagamento"] = build_texto_forma_pagamento(get_valor_total_reais(data))
+    is_pergolado = data.get("tipoProposta") == "pergolado"
+    total_a_vista_reais = (
+        get_valor_total_reais_pergolado(data) if is_pergolado else get_valor_total_reais(data)
+    )
+    data["valorFormaPagamento"] = build_texto_forma_pagamento(total_a_vista_reais)
 
     # Limpar log anterior para esta execução
     try:
@@ -393,7 +438,10 @@ def main() -> int:
                 _log(f"Formato de número não aplicado: {fmt_err}")
 
         # Placeholders: substituir apenas o placeholder dentro do texto da célula (resto do texto permanece)
-        for placeholder_text, json_key in FIELD_PLACEHOLDER_REPLACE.items():
+        placeholder_map = (
+            FIELD_PLACEHOLDER_REPLACE_PERGOLADO if is_pergolado else FIELD_PLACEHOLDER_REPLACE
+        )
+        for placeholder_text, json_key in placeholder_map.items():
             _log(f"Procurando placeholder no texto da célula: '{placeholder_text}' (campo JSON: '{json_key}')")
             sheet, address = find_cell_by_text(wb, placeholder_text)
             if sheet is None or address is None:
@@ -420,8 +468,7 @@ def main() -> int:
             cell.value = new_text
             _log(f"Placeholder substituído: '{placeholder_text}' -> '{value_str}'; célula agora: '{new_text}'")
 
-        # Valor nas 3 células "[Valor Total]": usar valor parcelado em 10x (total à vista + 10%), não à vista
-        total_a_vista_reais = get_valor_total_reais(data)
+        # Valor nas células "[Valor Total]": usar valor parcelado em 10x (total à vista + 10%), não à vista
         valor_10x_reais = total_a_vista_reais * (1 + CARTAO_10X_ACRECIMO)
         valor_10x_cents = int(round(valor_10x_reais * 100))
         valor_10x_str = format_currency(str(valor_10x_cents))
@@ -437,27 +484,26 @@ def main() -> int:
                 pass
             _log(f"  Preenchido: planilha '{sheet.name}', {address}")
 
-        # Texto de especificação na célula D43 (primeira planilha), com placeholders substituídos e regra do Item 3
-        texto_d43 = build_texto_especificacao_d43(data)
-        # No Windows o Excel reconhece \r\n para quebra de linha na célula; só \n pode não exibir
-        texto_d43_excel = texto_d43.replace("\n", "\r\n")
-        sheet_d43 = wb.sheets[0]
-        cell_d43 = sheet_d43.range(D43_CELL)
-        cell_d43.value = texto_d43_excel
-        try:
-            cell_d43.api.WrapText = True
-        except Exception:
-            pass
-        # Negrito via API de caracteres do xlwings (slice 0-based), mais confiável que .api.Characters no Windows
-        try:
-            if texto_d43_excel.startswith("Cobertura Premium"):
-                cell_d43.characters[0:18].font.bold = True
-            for m in re.finditer(r"Item \d+:", texto_d43_excel):
-                cell_d43.characters[m.start() : m.end()].font.bold = True
-            _log("Negrito aplicado a 'Cobertura Premium' e aos 'Item N:' na célula D43.")
-        except Exception as fmt_err:
-            _log(f"Negrito D43 não aplicado (ignorado): {fmt_err}")
-        _log(f"Célula {D43_CELL} preenchida com texto de especificação (planilha '{sheet_d43.name}').")
+        # Texto de especificação na célula D43 (apenas Cobertura Premium; Pergolado não usa D43)
+        if not is_pergolado:
+            texto_d43 = build_texto_especificacao_d43(data)
+            texto_d43_excel = texto_d43.replace("\n", "\r\n")
+            sheet_d43 = wb.sheets[0]
+            cell_d43 = sheet_d43.range(D43_CELL)
+            cell_d43.value = texto_d43_excel
+            try:
+                cell_d43.api.WrapText = True
+            except Exception:
+                pass
+            try:
+                if texto_d43_excel.startswith("Cobertura Premium"):
+                    cell_d43.characters[0:18].font.bold = True
+                for m in re.finditer(r"Item \d+:", texto_d43_excel):
+                    cell_d43.characters[m.start() : m.end()].font.bold = True
+                _log("Negrito aplicado a 'Cobertura Premium' e aos 'Item N:' na célula D43.")
+            except Exception as fmt_err:
+                _log(f"Negrito D43 não aplicado (ignorado): {fmt_err}")
+            _log(f"Célula {D43_CELL} preenchida com texto de especificação (planilha '{sheet_d43.name}').")
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         pdf_path = os.path.abspath(str(output_path.resolve()))

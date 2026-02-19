@@ -49,9 +49,13 @@ function createWindow(): void {
     const installResourcesPath = app.isPackaged
       ? path.join(path.dirname(process.execPath), 'resources')
       : appPath;
+    const isPergolado = data.tipoProposta === 'pergolado';
+    const templateFileName = isPergolado
+      ? 'PROPOSTA  - PERGOLADO.xlsx'
+      : 'PROPOSTA  - COBERTURA PREMIUM.xlsx';
     const templatePath = app.isPackaged
-      ? path.join(installResourcesPath, 'resources', 'PROPOSTA  - COBERTURA PREMIUM.xlsx')
-      : path.join(appPath, 'resources', 'PROPOSTA  - COBERTURA PREMIUM.xlsx');
+      ? path.join(installResourcesPath, 'resources', templateFileName)
+      : path.join(appPath, 'resources', templateFileName);
 
     const exeName = process.platform === 'win32' ? 'fill_and_export_pdf.exe' : 'fill_and_export_pdf';
     const exePath = app.isPackaged
