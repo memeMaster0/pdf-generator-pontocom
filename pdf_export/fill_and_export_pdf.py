@@ -458,6 +458,8 @@ def main() -> int:
             if value is None:
                 value = ""
             value_str = str(value)
+            if is_pergolado and json_key == "corPolicarbonato":
+                value_str = value_str.lower()
             new_text = current_str.replace(placeholder_text, value_str)
             # Célula de data: forçar formato Texto para o Excel não reinterpretar dd/mm/yyyy como mm/dd/yyyy
             if json_key == "dataAtual":
