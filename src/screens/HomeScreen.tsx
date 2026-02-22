@@ -1,9 +1,14 @@
 interface HomeScreenProps {
   onCoberturaPremium: () => void;
   onPergolado: () => void;
+  onCoberturaRetratil: () => void;
 }
 
-export function HomeScreen({ onCoberturaPremium, onPergolado }: HomeScreenProps) {
+export function HomeScreen({
+  onCoberturaPremium,
+  onPergolado,
+  onCoberturaRetratil,
+}: HomeScreenProps) {
   return (
     <div className="min-h-full flex flex-col items-center justify-center px-8 py-12">
       <h1 className="text-2xl font-semibold text-white mb-2 tracking-tight">
@@ -28,6 +33,14 @@ export function HomeScreen({ onCoberturaPremium, onPergolado }: HomeScreenProps)
           className="w-full py-4 px-6 rounded-[var(--radius-lg)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-left font-medium text-white transition-all duration-200 hover:border-[var(--color-accent)] hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg)]"
         >
           Pergolado
+        </button>
+
+        <button
+          type="button"
+          onClick={onCoberturaRetratil}
+          className="w-full py-4 px-6 rounded-[var(--radius-lg)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-left font-medium text-white transition-all duration-200 hover:border-[var(--color-accent)] hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg)]"
+        >
+          Cobertura Retrátil
         </button>
 
         <button

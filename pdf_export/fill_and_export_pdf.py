@@ -71,6 +71,17 @@ FIELD_PLACEHOLDER_REPLACE_PERGOLADO = {
     "[Valor p/ Forma de Pagamento]": "valorFormaPagamento",
 }
 
+# Placeholders para a planilha Cobertura Retrátil (apenas dados do cliente e valor; medidas vão na descrição D43)
+FIELD_PLACEHOLDER_REPLACE_COBERTURA_RETRATIL = {
+    "[Nome do Cliente]": "nomeCliente",
+    "[CPF/CPNJ]": "cpfCnpj",
+    "[Endereço]": "endereco",
+    "[Celular/Fone]": "celularFone",
+    "[Data Atual]": "dataAtual",
+    "[Cidade]": "cidade",
+    "[Valor p/ Forma de Pagamento]": "valorFormaPagamento",
+}
+
 # Campos que recebem o valor parcelado em 10x (total + 10%); todas as células com esse texto são preenchidas
 FIELD_TOTAL_LABEL = "[Valor Total]"
 
@@ -135,6 +146,53 @@ def build_texto_especificacao_d43(data: dict) -> str:
         text = re.sub(r"\nItem ([4-7]):", _renum, text)
 
     return text
+
+
+def build_texto_especificacao_d43_retratil(data: dict) -> str:
+    """
+    Monta o texto de especificação D43 para Cobertura Retrátil.
+    - Telha Térmica: template com cor parte superior/inferior; linha do modo de abertura só se Automatizada.
+    - Policarbonato: template com material; linha do modo de abertura só se Automatizada.
+    """
+    tipo = (data.get("tipoCobertura") or "").strip()
+    medidas = (data.get("medidas") or "").strip()
+    modo_abertura = (data.get("modoAbertura") or "").strip()
+    is_automatizada = modo_abertura == "Automatizada"
+    sufixo_modo = "\n\nCobertura com modo de abertura [Modo de Abertura]\n" if is_automatizada else ""
+
+    if tipo == "Telha Térmica":
+        template = (
+            "Cobertura Metálica Retrátil, medidas: [Medidas]\n\n"
+            "Cobertura metálica retrátil sendo uma folha de abrir e outra fixa com telha isotérmica sendo aço/aço 50mm, "
+            "acabamento [Cor da Parte Superior] na parte superior da telha e acabamento em aço [Cor da Parte Inferior] na parte inferior da telha, "
+            "tendo calha e rufo. Acabamento na parte metálica sendo pintura automotiva cor preto fosco."
+        )
+        cor_superior = (data.get("corParteSuperior") or "").strip().lower()
+        cor_inferior = (data.get("corParteInferior") or "").strip().lower()
+        texto = (
+            template.replace("[Medidas]", medidas)
+            .replace("[Cor da Parte Superior]", cor_superior)
+            .replace("[Cor da Parte Inferior]", cor_inferior)
+        )
+        if is_automatizada:
+            texto += sufixo_modo.replace("[Modo de Abertura]", modo_abertura.strip().lower())
+        return texto
+
+    # Policarbonato Compacto 3mm ou Alveolar 6mm
+    material = (
+        "policarbonato alveolar 6mm"
+        if tipo == "Policarbonato Alveolar 6mm"
+        else "policarbonato compacto 3mm"
+    )
+    template = (
+        "Cobertura Metálica Retrátil, medidas: [Medidas]\n\n"
+        "Cobertura metálica retrátil sendo uma folha de abrir e outra fixa com [material], "
+        "tendo calha e rufo. Acabamento na parte metálica sendo pintura automotiva cor preto fosco."
+    )
+    texto = template.replace("[Medidas]", medidas).replace("[material]", material)
+    if is_automatizada:
+        texto += sufixo_modo.replace("[Modo de Abertura]", modo_abertura.strip().lower())
+    return texto
 
 
 def format_currency(raw: str) -> str:
@@ -230,6 +288,21 @@ def get_valor_total_reais_pergolado(data: dict) -> float:
         dimensao = (data.get("dimensaoTubo") or "").strip()
         valor_m2_reais = PERGOLADO_VALOR_M2.get((tipo, dimensao), 0.0)
     total_reais = m2 * valor_m2_reais
+    return round(total_reais, 2)
+
+
+def get_valor_total_reais_cobertura_retratil(data: dict) -> float:
+    """
+    Valor total para Cobertura Retrátil:
+    (m² × valor por m²) + custo deslocamento + custo da abertura automatizada.
+    Em modo Manual, custo da abertura é 0. Valores no JSON em centavos.
+    """
+    medidas_str = data.get("medidas") or ""
+    m2 = parse_medidas_m2(medidas_str)
+    valor_m2_reais = raw_to_reais(data.get("valorM2") or "")
+    custo_desloc_reais = raw_to_reais(data.get("custoDeslocamento") or "")
+    custo_abertura_reais = raw_to_reais(data.get("custoAberturaAutomatizada") or "")
+    total_reais = m2 * valor_m2_reais + custo_desloc_reais + custo_abertura_reais
     return round(total_reais, 2)
 
 
@@ -391,9 +464,13 @@ def main() -> int:
     data["dataAtual"] = f"{_hoje.day:02d}/{_hoje.month:02d}/{_hoje.year}"
 
     is_pergolado = data.get("tipoProposta") == "pergolado"
-    total_a_vista_reais = (
-        get_valor_total_reais_pergolado(data) if is_pergolado else get_valor_total_reais(data)
-    )
+    is_cobertura_retratil = data.get("tipoProposta") == "cobertura_retratil"
+    if is_pergolado:
+        total_a_vista_reais = get_valor_total_reais_pergolado(data)
+    elif is_cobertura_retratil:
+        total_a_vista_reais = get_valor_total_reais_cobertura_retratil(data)
+    else:
+        total_a_vista_reais = get_valor_total_reais(data)
     data["valorFormaPagamento"] = build_texto_forma_pagamento(total_a_vista_reais)
 
     # Limpar log anterior para esta execução
@@ -438,9 +515,12 @@ def main() -> int:
                 _log(f"Formato de número não aplicado: {fmt_err}")
 
         # Placeholders: substituir apenas o placeholder dentro do texto da célula (resto do texto permanece)
-        placeholder_map = (
-            FIELD_PLACEHOLDER_REPLACE_PERGOLADO if is_pergolado else FIELD_PLACEHOLDER_REPLACE
-        )
+        if is_pergolado:
+            placeholder_map = FIELD_PLACEHOLDER_REPLACE_PERGOLADO
+        elif is_cobertura_retratil:
+            placeholder_map = FIELD_PLACEHOLDER_REPLACE_COBERTURA_RETRATIL
+        else:
+            placeholder_map = FIELD_PLACEHOLDER_REPLACE
         for placeholder_text, json_key in placeholder_map.items():
             _log(f"Procurando placeholder no texto da célula: '{placeholder_text}' (campo JSON: '{json_key}')")
             sheet, address = find_cell_by_text(wb, placeholder_text)
@@ -486,8 +566,19 @@ def main() -> int:
                 pass
             _log(f"  Preenchido: planilha '{sheet.name}', {address}")
 
-        # Texto de especificação na célula D43 (apenas Cobertura Premium; Pergolado não usa D43)
-        if not is_pergolado:
+        # Texto de especificação na célula D43 (Cobertura Premium ou Cobertura Retrátil; Pergolado não usa D43)
+        if is_cobertura_retratil:
+            texto_d43 = build_texto_especificacao_d43_retratil(data)
+            texto_d43_excel = texto_d43.replace("\n", "\r\n")
+            sheet_d43 = wb.sheets[0]
+            cell_d43 = sheet_d43.range(D43_CELL)
+            cell_d43.value = texto_d43_excel
+            try:
+                cell_d43.api.WrapText = True
+            except Exception:
+                pass
+            _log(f"Célula {D43_CELL} preenchida com texto de especificação Cobertura Retrátil (planilha '{sheet_d43.name}').")
+        elif not is_pergolado:
             texto_d43 = build_texto_especificacao_d43(data)
             texto_d43_excel = texto_d43.replace("\n", "\r\n")
             sheet_d43 = wb.sheets[0]

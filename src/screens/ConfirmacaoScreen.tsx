@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import type { CoberturaFormData } from '../context/CoberturaContext';
 import type { PergoladoFormData } from '../context/PergoladoContext';
+import type { CoberturaRetratilFormData } from '../context/CoberturaRetratilContext';
 import type { TipoOrcamento } from '../App';
 import type { ClienteFormData } from './ClienteScreen';
 import { ResumoCarousel } from '../components/ResumoCarousel';
 import { capitalize } from '../utils/formatadores';
 
 interface ConfirmacaoScreenProps {
-  data: CoberturaFormData | PergoladoFormData;
+  data: CoberturaFormData | PergoladoFormData | CoberturaRetratilFormData;
   tipoOrcamento: TipoOrcamento;
   clienteData: ClienteFormData;
   onBack: () => void;
@@ -75,6 +76,39 @@ function SlideOrcamentoPergolado({ data }: { data: PergoladoFormData }) {
   );
 }
 
+function SlideOrcamentoCoberturaRetratil({ data }: { data: CoberturaRetratilFormData }) {
+  const isTelhaTermica = data.tipoCobertura === 'Telha Térmica';
+  const corEstruturaExibir =
+    data.corEstrutura === 'Outra' ? data.corEstruturaOutra || '—' : data.corEstrutura;
+  return (
+    <div className="space-y-5">
+      <h3 className="text-sm font-semibold text-[var(--color-accent)] uppercase tracking-wider mb-4">
+        Orçamento
+      </h3>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+        <CampoResumo label="Tipo de Cobertura" value={data.tipoCobertura} />
+        {isTelhaTermica && (
+          <>
+            <CampoResumo label="Cor da Parte Superior" value={data.corParteSuperior} />
+            <CampoResumo label="Cor da Parte Inferior" value={data.corParteInferior} />
+            <CampoResumo label="Cor da Estrutura" value={corEstruturaExibir} />
+          </>
+        )}
+        <CampoResumo label="Modo de Abertura" value={data.modoAbertura} />
+        <CampoResumo label="Medidas" value={data.medidas || '—'} />
+        <CampoResumo label="Valor por m²" value={formatCurrency(data.valorM2)} />
+        {data.modoAbertura === 'Automatizada' && (
+          <CampoResumo
+            label="Custo da Abertura Automatizada"
+            value={formatCurrency(data.custoAberturaAutomatizada)}
+          />
+        )}
+        <CampoResumo label="Custo de Deslocamento" value={formatCurrency(data.custoDeslocamento)} />
+      </div>
+    </div>
+  );
+}
+
 function SlideCliente({ data }: { data: ClienteFormData }) {
   return (
     <div className="space-y-5">
@@ -129,18 +163,34 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
               custoDeslocamento: (data as CoberturaFormData).custoDeslocamento,
               ...basePayload,
             }
-          : {
-              tipoProposta: 'pergolado' as const,
-              tipoPolicarbonato: (data as PergoladoFormData).tipoPolicarbonato,
-              corPolicarbonato: (data as PergoladoFormData).corPolicarbonato,
-              medidas: (data as PergoladoFormData).medidas,
-              dimensaoTubo: (data as PergoladoFormData).dimensaoTubo,
-              ...(typeof (data as PergoladoFormData).valorM2 !== 'undefined' &&
-              (data as PergoladoFormData).valorM2 !== ''
-                ? { valorM2: (data as PergoladoFormData).valorM2 }
-                : {}),
-              ...basePayload,
-            };
+          : tipoOrcamento === 'cobertura_retratil'
+            ? {
+                tipoProposta: 'cobertura_retratil' as const,
+                tipoCobertura: (data as CoberturaRetratilFormData).tipoCobertura,
+                corParteSuperior: (data as CoberturaRetratilFormData).corParteSuperior,
+                corParteInferior: (data as CoberturaRetratilFormData).corParteInferior,
+                corEstrutura: (data as CoberturaRetratilFormData).corEstrutura,
+                corEstruturaOutra: (data as CoberturaRetratilFormData).corEstruturaOutra,
+                modoAbertura: (data as CoberturaRetratilFormData).modoAbertura,
+                medidas: (data as CoberturaRetratilFormData).medidas,
+                valorM2: (data as CoberturaRetratilFormData).valorM2,
+                custoAberturaAutomatizada: (data as CoberturaRetratilFormData)
+                  .custoAberturaAutomatizada,
+                custoDeslocamento: (data as CoberturaRetratilFormData).custoDeslocamento,
+                ...basePayload,
+              }
+            : {
+                tipoProposta: 'pergolado' as const,
+                tipoPolicarbonato: (data as PergoladoFormData).tipoPolicarbonato,
+                corPolicarbonato: (data as PergoladoFormData).corPolicarbonato,
+                medidas: (data as PergoladoFormData).medidas,
+                dimensaoTubo: (data as PergoladoFormData).dimensaoTubo,
+                ...(typeof (data as PergoladoFormData).valorM2 !== 'undefined' &&
+                (data as PergoladoFormData).valorM2 !== ''
+                  ? { valorM2: (data as PergoladoFormData).valorM2 }
+                  : {}),
+                ...basePayload,
+              };
 
       const result = await window.electronAPI.generatePdf(payload);
       if (result.success) {
@@ -158,6 +208,8 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
   const orcamentoContent =
     tipoOrcamento === 'cobertura' ? (
       <SlideOrcamentoCobertura data={data as CoberturaFormData} />
+    ) : tipoOrcamento === 'cobertura_retratil' ? (
+      <SlideOrcamentoCoberturaRetratil data={data as CoberturaRetratilFormData} />
     ) : (
       <SlideOrcamentoPergolado data={data as PergoladoFormData} />
     );

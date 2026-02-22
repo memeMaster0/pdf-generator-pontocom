@@ -50,9 +50,12 @@ function createWindow(): void {
       ? path.join(path.dirname(process.execPath), 'resources')
       : appPath;
     const isPergolado = data.tipoProposta === 'pergolado';
+    const isCoberturaRetratil = data.tipoProposta === 'cobertura_retratil';
     const templateFileName = isPergolado
       ? 'PROPOSTA  - PERGOLADO.xlsx'
-      : 'PROPOSTA  - COBERTURA PREMIUM.xlsx';
+      : isCoberturaRetratil
+        ? 'PROPOSTA  - COBERTURA RETRÁTIL.xlsx'
+        : 'PROPOSTA  - COBERTURA PREMIUM.xlsx';
     const templatePath = app.isPackaged
       ? path.join(installResourcesPath, 'resources', templateFileName)
       : path.join(appPath, 'resources', templateFileName);
@@ -63,7 +66,11 @@ function createWindow(): void {
       : path.join(appPath, 'pdf_export', exeName);
     const scriptPath = path.join(appPath, 'pdf_export', 'fill_and_export_pdf.py');
 
-    const tipoOrcamentoLabel = isPergolado ? 'Pergolado' : 'Cobertura Premium';
+    const tipoOrcamentoLabel = isPergolado
+      ? 'Pergolado'
+      : isCoberturaRetratil
+        ? 'Cobertura Retrátil'
+        : 'Cobertura Premium';
     const nomeCliente = (data.nomeCliente as string) || '';
     const palavras = nomeCliente.trim().split(/\s+/).filter(Boolean);
     const nomeParaArquivo = palavras.length > 3 ? palavras.slice(0, 2).join(' ') : nomeCliente.trim();

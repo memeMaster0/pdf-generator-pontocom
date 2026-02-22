@@ -28,8 +28,11 @@ Desktop app for **generating complete PDFs** for a metallurgy company. The goal 
 The app uses a **bundled .exe** that fills the Excel template and exports to PDF. End users **do not need Python**.
 
 - **On the user's PC**: only **Microsoft Excel** is required (Windows). The app installer includes the generator (`fill_and_export_pdf.exe`).
-- **Excel fields**: the template uses **placeholders** replaced by the script (e.g. `[Nome do Cliente]`, `[Data Atual]`, `[Valor Total]`, `[Valor p/ Forma de Pagamento]`). The full list and mapping are in `pdf_export/fill_and_export_pdf.py` (`FIELD_PLACEHOLDER_REPLACE` and related constants).
-- **Template**: the file **`PROPOSTA  - COBERTURA PREMIUM.xlsx`** must be in the project's **`resources/`** folder (it is copied into the installer).
+- **Excel fields**: each template uses **placeholders** replaced by the script (e.g. `[Nome do Cliente]`, `[Data Atual]`, `[Valor Total]`, `[Valor p/ Forma de Pagamento]`). The mapping per product is in `pdf_export/fill_and_export_pdf.py` (`FIELD_PLACEHOLDER_REPLACE`, `FIELD_PLACEHOLDER_REPLACE_PERGOLADO`, `FIELD_PLACEHOLDER_REPLACE_COBERTURA_RETRATIL`).
+- **Templates**: the following .xlsx files must be in the project's **`resources/`** folder (they are copied into the installer):
+  - **`PROPOSTA  - COBERTURA PREMIUM.xlsx`** — Cobertura Premium
+  - **`PROPOSTA  - PERGOLADO.xlsx`** — Pergolado
+  - **`PROPOSTA  - COBERTURA RETRÁTIL.xlsx`** — Cobertura Retrátil
 
 ### Building the installer (.exe)
 
@@ -92,7 +95,10 @@ After installing Node.js:
 
 ## Screen flow
 
-1. **Home** — Buttons: Cobertura Premium (active), Pergolado (coming soon), Porta (inactive).
-2. **Cobertura Premium** — Three-step selection (Type → Has pillar → Color/Paint), then form (dimensions, price/m², pillar, travel cost).
-3. **Client information** — Name, CPF/CNPJ, address, city, phone (formatted and validated).
-4. **Summary** — Carousel with quote and client summary; **"Generate PDF"** button opens the save dialog and runs the generator (.exe or Python script in dev), which fills the Excel template via placeholders and exports to PDF via Excel.
+1. **Home** — Choice of product: **Cobertura Premium** (active), **Pergolado** (active), **Cobertura Retrátil** (active), **Porta** (inactive).
+2. **Quote (product-specific)**  
+   - **Cobertura Premium**: five-step selection (type, pillar, color/paint, thermal tile, PVC lining), then form (dimensions, price/m², pillar if applicable, travel cost).  
+   - **Pergolado**: type and color of polycarbonate, tube dimension (or manual), then dimensions and optional price/m².  
+   - **Cobertura Retrátil**: type of cover (thermal tile or polycarbonate); if thermal tile, then upper/lower colour and structure colour; then opening mode (manual/automated). After that, form with dimensions, price/m², optional automated opening cost, travel cost.
+3. **Client information** — Name, CPF/CNPJ, address, city, phone (formatted and validated). Same for all products.
+4. **Summary** — Carousel with quote and client summary; **"Generate PDF"** opens the save dialog and runs the generator (.exe or Python script in dev). The script selects the correct Excel template by product, fills placeholders (and the D43 description for Cobertura Premium and Cobertura Retrátil), then exports to PDF via Excel.
