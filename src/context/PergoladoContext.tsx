@@ -22,6 +22,7 @@ export interface PergoladoFormData {
   medidas: string;
   dimensaoTubo: string; // texto a exibir no Excel: "100 x 50", "150 x 50" ou valor manual
   valorM2?: string; // em centavos; apenas quando dimensão foi Manual
+  custoDeslocamento: string;
 }
 
 interface PergoladoState {
@@ -31,6 +32,7 @@ interface PergoladoState {
   dimensaoTubo: DimensaoTubo;
   dimensaoTuboManual: string;
   valorM2: string;
+  custoDeslocamento: string;
   formTouched: boolean;
 }
 
@@ -41,6 +43,7 @@ type PergoladoAction =
   | { type: 'SET_DIMENSAO_TUBO'; payload: DimensaoTubo }
   | { type: 'SET_DIMENSAO_TUBO_MANUAL'; payload: string }
   | { type: 'SET_VALOR_M2'; payload: string }
+  | { type: 'SET_CUSTO_DESLOCAMENTO'; payload: string }
   | { type: 'SET_FORM_TOUCHED'; payload: boolean }
   | { type: 'RESET' };
 
@@ -51,6 +54,7 @@ const initialState: PergoladoState = {
   dimensaoTubo: null,
   dimensaoTuboManual: '',
   valorM2: '',
+  custoDeslocamento: '',
   formTouched: false,
 };
 
@@ -68,6 +72,8 @@ function pergoladoReducer(state: PergoladoState, action: PergoladoAction): Pergo
       return { ...state, dimensaoTuboManual: action.payload };
     case 'SET_VALOR_M2':
       return { ...state, valorM2: action.payload };
+    case 'SET_CUSTO_DESLOCAMENTO':
+      return { ...state, custoDeslocamento: action.payload };
     case 'SET_FORM_TOUCHED':
       return { ...state, formTouched: action.payload };
     case 'RESET':
@@ -84,6 +90,7 @@ interface PergoladoContextValue extends PergoladoState {
   setDimensaoTubo: (v: DimensaoTubo) => void;
   setDimensaoTuboManual: (v: string) => void;
   setValorM2: (v: string) => void;
+  setCustoDeslocamento: (v: string) => void;
   setFormTouched: (v: boolean) => void;
   reset: () => void;
   canShowForm: boolean;
@@ -113,6 +120,9 @@ export function PergoladoProvider({ children }: { children: ReactNode }) {
   const setValorM2 = useCallback((payload: string) => {
     dispatch({ type: 'SET_VALOR_M2', payload });
   }, []);
+  const setCustoDeslocamento = useCallback((payload: string) => {
+    dispatch({ type: 'SET_CUSTO_DESLOCAMENTO', payload });
+  }, []);
   const setFormTouched = useCallback((payload: boolean) => {
     dispatch({ type: 'SET_FORM_TOUCHED', payload });
   }, []);
@@ -136,6 +146,7 @@ export function PergoladoProvider({ children }: { children: ReactNode }) {
       corPolicarbonato: state.corPolicarbonato,
       medidas: state.medidas,
       dimensaoTubo: dimensaoExibir,
+      custoDeslocamento: state.custoDeslocamento,
     };
     if (state.dimensaoTubo === 'Manual' && state.valorM2) {
       result.valorM2 = state.valorM2;
@@ -151,6 +162,7 @@ export function PergoladoProvider({ children }: { children: ReactNode }) {
     setDimensaoTubo,
     setDimensaoTuboManual,
     setValorM2,
+    setCustoDeslocamento,
     setFormTouched,
     reset,
     canShowForm,

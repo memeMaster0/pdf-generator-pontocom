@@ -25,12 +25,14 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
     dimensaoTubo,
     dimensaoTuboManual,
     valorM2,
+    custoDeslocamento,
     setTipoPolicarbonato,
     setCorPolicarbonato,
     setMedidas,
     setDimensaoTubo,
     setDimensaoTuboManual,
     setValorM2,
+    setCustoDeslocamento,
     canShowForm,
     formTouched,
     setFormTouched,
@@ -46,8 +48,10 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
     const okMedidas = validateMedidas(medidas);
     const okManual =
       !isManual || (dimensaoTuboManual.trim().length > 0 && valorM2.length > 0 && parseInt(valorM2, 10) > 0);
+    const okDeslocamento =
+      custoDeslocamento.length > 0 && parseInt(custoDeslocamento, 10) >= 0;
 
-    if (!okMedidas || !okManual) return;
+    if (!okMedidas || !okManual || !okDeslocamento) return;
 
     const data = buildFormData();
     if (data) onConfirm(data);
@@ -55,7 +59,9 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
 
   const canSubmitForm =
     validateMedidas(medidas) &&
-    (!isManual || (dimensaoTuboManual.trim().length > 0 && valorM2.length > 0 && parseInt(valorM2, 10) > 0));
+    (!isManual || (dimensaoTuboManual.trim().length > 0 && valorM2.length > 0 && parseInt(valorM2, 10) > 0)) &&
+    custoDeslocamento.length > 0 &&
+    parseInt(custoDeslocamento, 10) >= 0;
 
   return (
     <div className="min-h-full flex flex-col px-6 py-8 max-w-2xl mx-auto">
@@ -158,7 +164,24 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
       )}
 
       {canShowForm && (
-        <div className="mt-8 pt-4 border-t border-[var(--color-border)]">
+        <div className="mt-8 pt-4 border-t border-[var(--color-border)] space-y-6">
+          <CurrencyInput
+            id="custo-deslocamento-pergolado"
+            label="Custo de Deslocamento"
+            value={custoDeslocamento}
+            onChange={setCustoDeslocamento}
+            placeholder="0,00"
+            hint="R$ 200,00"
+            suffix={
+              <button
+                type="button"
+                onClick={() => setCustoDeslocamento('0')}
+                className="shrink-0 self-stretch flex items-center px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] text-sm font-medium transition-colors"
+              >
+                Sem custo
+              </button>
+            }
+          />
           <button
             type="button"
             onClick={handleSubmit}

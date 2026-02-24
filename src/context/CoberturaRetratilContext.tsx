@@ -15,6 +15,17 @@ export type CorParteSuperior = 'Natural' | 'Preta' | null;
 export type CorParteInferior = 'Amadeirado' | 'Branco' | 'Preto' | null;
 export type CorEstrutura = 'Preto' | 'Branca' | 'Outra' | null;
 export type ModoAbertura = 'Manual' | 'Automatizada' | null;
+export type QuantidadeMotores = '1 Motor' | '2 Motores' | null;
+
+/** Valor fixo por m² em centavos: Telha Térmica ou Compacto 3mm = R$ 1.200,00; Alveolar 6mm = R$ 800,00 */
+export const VALOR_M2_FIXO_CENTAVOS: Record<
+  'Telha Térmica' | 'Policarbonato Compacto 3mm' | 'Policarbonato Alveolar 6mm',
+  string
+> = {
+  'Telha Térmica': '120000',
+  'Policarbonato Compacto 3mm': '120000',
+  'Policarbonato Alveolar 6mm': '80000',
+};
 
 export interface CoberturaRetratilFormData {
   tipoCobertura: 'Telha Térmica' | 'Policarbonato Compacto 3mm' | 'Policarbonato Alveolar 6mm';
@@ -23,6 +34,7 @@ export interface CoberturaRetratilFormData {
   corEstrutura: 'Preto' | 'Branca' | 'Outra';
   corEstruturaOutra: string;
   modoAbertura: 'Manual' | 'Automatizada';
+  quantidadeMotores?: '1 Motor' | '2 Motores';
   medidas: string;
   valorM2: string;
   custoAberturaAutomatizada: string;
@@ -35,9 +47,11 @@ interface CoberturaRetratilState {
   step3: CorParteInferior;
   step4: CorEstrutura;
   step5: ModoAbertura;
+  quantidadeMotores: QuantidadeMotores;
   corEstruturaOutra: string;
   medidas: string;
   valorM2: string;
+  valorM2Locked: boolean;
   custoAberturaAutomatizada: string;
   custoDeslocamento: string;
   formTouched: boolean;
@@ -49,9 +63,11 @@ type CoberturaRetratilAction =
   | { type: 'SET_STEP3'; payload: CorParteInferior }
   | { type: 'SET_STEP4'; payload: CorEstrutura }
   | { type: 'SET_STEP5'; payload: ModoAbertura }
+  | { type: 'SET_QUANTIDADE_MOTORES'; payload: QuantidadeMotores }
   | { type: 'SET_COR_ESTRUTURA_OUTRA'; payload: string }
   | { type: 'SET_MEDIDAS'; payload: string }
   | { type: 'SET_VALOR_M2'; payload: string }
+  | { type: 'SET_VALOR_M2_LOCKED'; payload: boolean }
   | { type: 'SET_CUSTO_ABERTURA_AUTOMATIZADA'; payload: string }
   | { type: 'SET_CUSTO_DESLOCAMENTO'; payload: string }
   | { type: 'SET_FORM_TOUCHED'; payload: boolean }
@@ -63,9 +79,11 @@ const initialState: CoberturaRetratilState = {
   step3: null,
   step4: null,
   step5: null,
+  quantidadeMotores: null,
   corEstruturaOutra: '',
   medidas: '',
   valorM2: '',
+  valorM2Locked: true,
   custoAberturaAutomatizada: '',
   custoDeslocamento: '',
   formTouched: false,
@@ -76,8 +94,17 @@ function coberturaRetratilReducer(
   action: CoberturaRetratilAction
 ): CoberturaRetratilState {
   switch (action.type) {
-    case 'SET_STEP1':
-      return { ...state, step1: action.payload };
+    case 'SET_STEP1': {
+      const payload = action.payload;
+      if (!payload) return { ...state, step1: payload };
+      const fixedValor = VALOR_M2_FIXO_CENTAVOS[payload];
+      return {
+        ...state,
+        step1: payload,
+        valorM2: fixedValor,
+        valorM2Locked: true,
+      };
+    }
     case 'SET_STEP2':
       return { ...state, step2: action.payload };
     case 'SET_STEP3':
@@ -85,13 +112,21 @@ function coberturaRetratilReducer(
     case 'SET_STEP4':
       return { ...state, step4: action.payload };
     case 'SET_STEP5':
-      return { ...state, step5: action.payload };
+      return {
+        ...state,
+        step5: action.payload,
+        quantidadeMotores: action.payload === 'Manual' ? null : state.quantidadeMotores,
+      };
+    case 'SET_QUANTIDADE_MOTORES':
+      return { ...state, quantidadeMotores: action.payload };
     case 'SET_COR_ESTRUTURA_OUTRA':
       return { ...state, corEstruturaOutra: action.payload };
     case 'SET_MEDIDAS':
       return { ...state, medidas: action.payload };
     case 'SET_VALOR_M2':
       return { ...state, valorM2: action.payload };
+    case 'SET_VALOR_M2_LOCKED':
+      return { ...state, valorM2Locked: action.payload };
     case 'SET_CUSTO_ABERTURA_AUTOMATIZADA':
       return { ...state, custoAberturaAutomatizada: action.payload };
     case 'SET_CUSTO_DESLOCAMENTO':
@@ -111,9 +146,11 @@ interface CoberturaRetratilContextValue extends CoberturaRetratilState {
   setStep3: (v: CorParteInferior) => void;
   setStep4: (v: CorEstrutura) => void;
   setStep5: (v: ModoAbertura) => void;
+  setQuantidadeMotores: (v: QuantidadeMotores) => void;
   setCorEstruturaOutra: (v: string) => void;
   setMedidas: (v: string) => void;
   setValorM2: (v: string) => void;
+  setValorM2Locked: (v: boolean) => void;
   setCustoAberturaAutomatizada: (v: string) => void;
   setCustoDeslocamento: (v: string) => void;
   setFormTouched: (v: boolean) => void;
@@ -142,6 +179,9 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
   const setStep5 = useCallback((payload: ModoAbertura) => {
     dispatch({ type: 'SET_STEP5', payload });
   }, []);
+  const setQuantidadeMotores = useCallback((payload: QuantidadeMotores) => {
+    dispatch({ type: 'SET_QUANTIDADE_MOTORES', payload });
+  }, []);
   const setCorEstruturaOutra = useCallback((payload: string) => {
     dispatch({ type: 'SET_COR_ESTRUTURA_OUTRA', payload });
   }, []);
@@ -150,6 +190,9 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
   }, []);
   const setValorM2 = useCallback((payload: string) => {
     dispatch({ type: 'SET_VALOR_M2', payload });
+  }, []);
+  const setValorM2Locked = useCallback((payload: boolean) => {
+    dispatch({ type: 'SET_VALOR_M2_LOCKED', payload });
   }, []);
   const setCustoAberturaAutomatizada = useCallback((payload: string) => {
     dispatch({ type: 'SET_CUSTO_ABERTURA_AUTOMATIZADA', payload });
@@ -169,6 +212,7 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
 
   const canShowForm = (() => {
     if (!state.step1 || !state.step5) return false;
+    if (state.step5 === 'Automatizada' && state.quantidadeMotores === null) return false;
     if (isPolicarbonato) return true;
     // Telha Térmica: exige steps 2, 3, 4 e, se "outra", corEstruturaOutra preenchida
     return (
@@ -182,11 +226,11 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
   const buildFormData = useCallback((): CoberturaRetratilFormData | null => {
     if (!state.step1 || !state.step5) return null;
     if (isPolicarbonato) {
-      return {
+      const base = {
         tipoCobertura: state.step1,
-        corParteSuperior: 'Natural',
-        corParteInferior: 'Amadeirado',
-        corEstrutura: 'Preto',
+        corParteSuperior: 'Natural' as const,
+        corParteInferior: 'Amadeirado' as const,
+        corEstrutura: 'Preto' as const,
         corEstruturaOutra: '',
         modoAbertura: state.step5,
         medidas: state.medidas,
@@ -194,6 +238,10 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
         custoAberturaAutomatizada: state.custoAberturaAutomatizada,
         custoDeslocamento: state.custoDeslocamento,
       };
+      if (state.step5 === 'Automatizada' && state.quantidadeMotores) {
+        return { ...base, quantidadeMotores: state.quantidadeMotores };
+      }
+      return base;
     }
     if (
       !state.step2 ||
@@ -203,7 +251,7 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
     ) {
       return null;
     }
-    return {
+    const base = {
       tipoCobertura: state.step1,
       corParteSuperior: state.step2,
       corParteInferior: state.step3,
@@ -215,6 +263,10 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
       custoAberturaAutomatizada: state.custoAberturaAutomatizada,
       custoDeslocamento: state.custoDeslocamento,
     };
+    if (state.step5 === 'Automatizada' && state.quantidadeMotores) {
+      return { ...base, quantidadeMotores: state.quantidadeMotores };
+    }
+    return base;
   }, [state, isPolicarbonato]);
 
   const value: CoberturaRetratilContextValue = {
@@ -224,9 +276,11 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
     setStep3,
     setStep4,
     setStep5,
+    setQuantidadeMotores,
     setCorEstruturaOutra,
     setMedidas,
     setValorM2,
+    setValorM2Locked,
     setCustoAberturaAutomatizada,
     setCustoDeslocamento,
     setFormTouched,

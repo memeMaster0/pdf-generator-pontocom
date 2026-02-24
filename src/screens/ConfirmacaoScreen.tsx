@@ -71,6 +71,7 @@ function SlideOrcamentoPergolado({ data }: { data: PergoladoFormData }) {
         {data.valorM2 !== undefined && data.valorM2 !== '' && (
           <CampoResumo label="Valor por m²" value={formatCurrency(data.valorM2)} />
         )}
+        <CampoResumo label="Custo de Deslocamento" value={formatCurrency(data.custoDeslocamento)} />
       </div>
     </div>
   );
@@ -95,6 +96,9 @@ function SlideOrcamentoCoberturaRetratil({ data }: { data: CoberturaRetratilForm
           </>
         )}
         <CampoResumo label="Modo de Abertura" value={data.modoAbertura} />
+        {data.modoAbertura === 'Automatizada' && data.quantidadeMotores && (
+          <CampoResumo label="Quantidade de Motores" value={data.quantidadeMotores} />
+        )}
         <CampoResumo label="Medidas" value={data.medidas || '—'} />
         <CampoResumo label="Valor por m²" value={formatCurrency(data.valorM2)} />
         {data.modoAbertura === 'Automatizada' && (
@@ -172,6 +176,9 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
                 corEstrutura: (data as CoberturaRetratilFormData).corEstrutura,
                 corEstruturaOutra: (data as CoberturaRetratilFormData).corEstruturaOutra,
                 modoAbertura: (data as CoberturaRetratilFormData).modoAbertura,
+                ...(typeof (data as CoberturaRetratilFormData).quantidadeMotores !== 'undefined'
+                  ? { quantidadeMotores: (data as CoberturaRetratilFormData).quantidadeMotores }
+                  : {}),
                 medidas: (data as CoberturaRetratilFormData).medidas,
                 valorM2: (data as CoberturaRetratilFormData).valorM2,
                 custoAberturaAutomatizada: (data as CoberturaRetratilFormData)
@@ -189,6 +196,7 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
                 (data as PergoladoFormData).valorM2 !== ''
                   ? { valorM2: (data as PergoladoFormData).valorM2 }
                   : {}),
+                custoDeslocamento: (data as PergoladoFormData).custoDeslocamento,
                 ...basePayload,
               };
 

@@ -84,9 +84,15 @@ FIELD_PLACEHOLDER_REPLACE_COBERTURA_RETRATIL = {
 
 # Campos que recebem o valor parcelado em 10x (total + 10%); todas as células com esse texto são preenchidas
 FIELD_TOTAL_LABEL = "[Valor Total]"
+# Cobertura Retrátil: valor total geral (cobertura + automatização) à vista
+FIELD_TOTAL_GERAL_LABEL = "[Valor Total Geral]"
 
 # Célula fixa que recebe o texto de especificação (sempre D43, primeira planilha)
 D43_CELL = "D43"
+# Células fixas Cobertura Retrátil modo automatizado (D44 = descrição automatizador; M44 e N44 = valor da abertura automatizada)
+D44_CELL = "D44"
+M44_CELL = "M44"
+N44_CELL = "N44"
 
 # Template do texto de especificação. Placeholders: [Medidas da Cobertura], [Tipo de Cobertura], [Pintura da Cobertura], [Espessura da Telha Térmica], [Tipo do Forro].
 # Regra Item 3 (situacional): se temPilar != "Sim", remove o bloco "Item 3: Pilar metálico..." e renumera 4->3, 5->4, 6->5, 7->6.
@@ -275,7 +281,7 @@ PERGOLADO_VALOR_M2 = {
 
 def get_valor_total_reais_pergolado(data: dict) -> float:
     """
-    Valor total para Pergolado: m² × valor por m².
+    Valor total para Pergolado: m² × valor por m² + custo de deslocamento.
     Se valorM2 veio no payload (dimensão manual), usa esse valor; senão usa a tabela fixa.
     """
     medidas_str = data.get("medidas") or ""
@@ -287,39 +293,53 @@ def get_valor_total_reais_pergolado(data: dict) -> float:
         tipo = (data.get("tipoPolicarbonato") or "").strip()
         dimensao = (data.get("dimensaoTubo") or "").strip()
         valor_m2_reais = PERGOLADO_VALOR_M2.get((tipo, dimensao), 0.0)
-    total_reais = m2 * valor_m2_reais
+    custo_desloc_reais = raw_to_reais(data.get("custoDeslocamento") or "")
+    total_reais = m2 * valor_m2_reais + custo_desloc_reais
     return round(total_reais, 2)
 
 
-def get_valor_total_reais_cobertura_retratil(data: dict) -> float:
+def get_valor_cobertura_retratil_reais(data: dict) -> float:
     """
-    Valor total para Cobertura Retrátil:
-    (m² × valor por m²) + custo deslocamento + custo da abertura automatizada.
-    Em modo Manual, custo da abertura é 0. Valores no JSON em centavos.
+    Valor da cobertura retrátil SEM o custo da abertura automatizada.
+    Usado como base para cálculo de juros (5x/10x) e para [Valor Total].
+    Fórmula: (m² × valor por m²) + custo deslocamento.
     """
     medidas_str = data.get("medidas") or ""
     m2 = parse_medidas_m2(medidas_str)
     valor_m2_reais = raw_to_reais(data.get("valorM2") or "")
     custo_desloc_reais = raw_to_reais(data.get("custoDeslocamento") or "")
+    return round(m2 * valor_m2_reais + custo_desloc_reais, 2)
+
+
+def get_valor_total_reais_cobertura_retratil(data: dict) -> float:
+    """
+    Valor total para Cobertura Retrátil (cobertura + automatização):
+    (m² × valor por m²) + custo deslocamento + custo da abertura automatizada.
+    Em modo Manual, custo da abertura é 0. Valores no JSON em centavos.
+    """
+    valor_cobertura = get_valor_cobertura_retratil_reais(data)
     custo_abertura_reais = raw_to_reais(data.get("custoAberturaAutomatizada") or "")
-    total_reais = m2 * valor_m2_reais + custo_desloc_reais + custo_abertura_reais
-    return round(total_reais, 2)
+    return round(valor_cobertura + custo_abertura_reais, 2)
 
 
-def build_texto_forma_pagamento(total_a_vista_reais: float) -> str:
+def build_texto_forma_pagamento(
+    total_a_vista_reais: float,
+    total_a_vista_geral: float | None = None,
+) -> str:
     """
     Monta o texto para [Valor p/ Forma de Pagamento]:
     "5x de R$ X,XX, 10x de R$ Y,YY ou R$ Z,ZZ A Vista"
-    - 5x: total * 1.06 / 5
-    - 10x: total * 1.10 / 10
-    - À vista: total
+    - 5x: total_a_vista_reais * 1.06 / 5
+    - 10x: total_a_vista_reais * 1.10 / 10
+    - À vista: total_a_vista_geral se informado, senão total_a_vista_reais (Cobertura Retrátil: juros só na cobertura; à vista = total geral).
     """
     total_5x = total_a_vista_reais * (1 + CARTAO_5X_ACRECIMO)
     total_10x = total_a_vista_reais * (1 + CARTAO_10X_ACRECIMO)
     parcela_5x = total_5x / 5
     parcela_10x = total_10x / 10
 
-    s_avista = format_currency(str(int(round(total_a_vista_reais * 100))))
+    avista_reais = total_a_vista_geral if total_a_vista_geral is not None else total_a_vista_reais
+    s_avista = format_currency(str(int(round(avista_reais * 100))))
     s_5x = format_currency(str(int(round(parcela_5x * 100))))
     s_10x = format_currency(str(int(round(parcela_10x * 100))))
 
@@ -465,13 +485,19 @@ def main() -> int:
 
     is_pergolado = data.get("tipoProposta") == "pergolado"
     is_cobertura_retratil = data.get("tipoProposta") == "cobertura_retratil"
+    valor_cobertura_retratil_reais: float | None = None  # só usado para Cobertura Retrátil (base para juros e [Valor Total])
     if is_pergolado:
         total_a_vista_reais = get_valor_total_reais_pergolado(data)
+        data["valorFormaPagamento"] = build_texto_forma_pagamento(total_a_vista_reais)
     elif is_cobertura_retratil:
-        total_a_vista_reais = get_valor_total_reais_cobertura_retratil(data)
+        valor_cobertura_retratil_reais = get_valor_cobertura_retratil_reais(data)
+        total_a_vista_reais = get_valor_total_reais_cobertura_retratil(data)  # total geral (cobertura + automatização)
+        data["valorFormaPagamento"] = build_texto_forma_pagamento(
+            valor_cobertura_retratil_reais, total_a_vista_reais
+        )
     else:
         total_a_vista_reais = get_valor_total_reais(data)
-    data["valorFormaPagamento"] = build_texto_forma_pagamento(total_a_vista_reais)
+        data["valorFormaPagamento"] = build_texto_forma_pagamento(total_a_vista_reais)
 
     # Limpar log anterior para esta execução
     try:
@@ -550,11 +576,15 @@ def main() -> int:
             cell.value = new_text
             _log(f"Placeholder substituído: '{placeholder_text}' -> '{value_str}'; célula agora: '{new_text}'")
 
-        # Valor nas células "[Valor Total]": usar valor parcelado em 10x (total à vista + 10%), não à vista
-        valor_10x_reais = total_a_vista_reais * (1 + CARTAO_10X_ACRECIMO)
+        # Valor nas células "[Valor Total]": valor parcelado em 10x (base + 10%). Cobertura Retrátil: juros só na cobertura.
+        if is_cobertura_retratil and valor_cobertura_retratil_reais is not None:
+            valor_10x_reais = valor_cobertura_retratil_reais * (1 + CARTAO_10X_ACRECIMO)
+            _log(f"[Valor Total] Cobertura Retrátil: base cobertura={valor_cobertura_retratil_reais} -> 10x (só cobertura)")
+        else:
+            valor_10x_reais = total_a_vista_reais * (1 + CARTAO_10X_ACRECIMO)
         valor_10x_cents = int(round(valor_10x_reais * 100))
         valor_10x_str = format_currency(str(valor_10x_cents))
-        _log(f"Valor em 10x (para células [Valor Total]): total à vista={total_a_vista_reais} -> 10x = '{valor_10x_str}'")
+        _log(f"Valor em 10x (para células [Valor Total]): 10x = '{valor_10x_str}'")
         total_cells = find_all_cells_by_text(wb, FIELD_TOTAL_LABEL)
         _log(f"Células com '{FIELD_TOTAL_LABEL}': {len(total_cells)} encontrada(s)")
         for sheet, address in total_cells:
@@ -565,6 +595,20 @@ def main() -> int:
             except Exception:
                 pass
             _log(f"  Preenchido: planilha '{sheet.name}', {address}")
+
+        # Cobertura Retrátil: preencher [Valor Total Geral] = cobertura + automatização (total à vista geral)
+        if is_cobertura_retratil:
+            total_geral_str = format_currency(str(int(round(total_a_vista_reais * 100))))
+            total_geral_cells = find_all_cells_by_text(wb, FIELD_TOTAL_GERAL_LABEL)
+            _log(f"Células com '{FIELD_TOTAL_GERAL_LABEL}': {len(total_geral_cells)} encontrada(s)")
+            for sheet, address in total_geral_cells:
+                cell = sheet.range(address)
+                cell.value = total_geral_str
+                try:
+                    cell.number_format = "R$ #.##0,00"
+                except Exception:
+                    pass
+                _log(f"  Preenchido: planilha '{sheet.name}', {address}")
 
         # Texto de especificação na célula D43 (Cobertura Premium ou Cobertura Retrátil; Pergolado não usa D43)
         if is_cobertura_retratil:
@@ -578,6 +622,23 @@ def main() -> int:
             except Exception:
                 pass
             _log(f"Célula {D43_CELL} preenchida com texto de especificação Cobertura Retrátil (planilha '{sheet_d43.name}').")
+            # D44, M44, N44 só quando modo de abertura for Automatizada
+            modo_abertura = (data.get("modoAbertura") or "").strip()
+            if modo_abertura == "Automatizada":
+                sheet_ret = wb.sheets[0]
+                qtd_motores = (data.get("quantidadeMotores") or "").strip() or "[Quantidade de Motores]"
+                texto_d44 = f"Automatizador para cobertura retrátil marca PPA Jetflex {qtd_motores}"
+                sheet_ret.range(D44_CELL).value = texto_d44
+                custo_abertura_raw = data.get("custoAberturaAutomatizada") or ""
+                valor_abertura_fmt = format_currency(custo_abertura_raw)
+                sheet_ret.range(M44_CELL).value = valor_abertura_fmt
+                sheet_ret.range(N44_CELL).value = valor_abertura_fmt
+                try:
+                    sheet_ret.range(M44_CELL).number_format = "R$ #.##0,00"
+                    sheet_ret.range(N44_CELL).number_format = "R$ #.##0,00"
+                except Exception:
+                    pass
+                _log(f"Células {D44_CELL}, {M44_CELL}, {N44_CELL} preenchidas (modo Automatizada).")
         elif not is_pergolado:
             texto_d43 = build_texto_especificacao_d43(data)
             texto_d43_excel = texto_d43.replace("\n", "\r\n")

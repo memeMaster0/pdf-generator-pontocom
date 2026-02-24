@@ -1,7 +1,7 @@
 import { useCoberturaRetratil } from '../context/CoberturaRetratilContext';
 import type { CoberturaRetratilFormData } from '../context/CoberturaRetratilContext';
 import { StepButtons } from '../components/StepButtons';
-import { CurrencyInput } from '../components/CurrencyInput';
+import { CurrencyInput, formatCurrencyDisplay } from '../components/CurrencyInput';
 import { MedidasInput, validateMedidas } from '../components/MedidasInput';
 
 interface CoberturaRetratilScreenProps {
@@ -16,9 +16,11 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     step3,
     step4,
     step5,
+    quantidadeMotores,
     corEstruturaOutra,
     medidas,
     valorM2,
+    valorM2Locked,
     custoAberturaAutomatizada,
     custoDeslocamento,
     setStep1,
@@ -26,9 +28,11 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     setStep3,
     setStep4,
     setStep5,
+    setQuantidadeMotores,
     setCorEstruturaOutra,
     setMedidas,
     setValorM2,
+    setValorM2Locked,
     setCustoAberturaAutomatizada,
     setCustoDeslocamento,
     canShowForm,
@@ -48,7 +52,8 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     if (!data) return;
 
     const okMedidas = validateMedidas(medidas);
-    const okValorM2 = valorM2.length > 0 && parseInt(valorM2, 10) > 0;
+    const okValorM2 =
+      valorM2Locked || (valorM2.length > 0 && parseInt(valorM2, 10) > 0);
     const okDeslocamento = custoDeslocamento.length > 0 && parseInt(custoDeslocamento, 10) >= 0;
     const okAbertura =
       step5 !== 'Automatizada' ||
@@ -61,8 +66,7 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
 
   const canSubmitForm =
     validateMedidas(medidas) &&
-    valorM2.length > 0 &&
-    parseInt(valorM2, 10) > 0 &&
+    (valorM2Locked || (valorM2.length > 0 && parseInt(valorM2, 10) > 0)) &&
     custoDeslocamento.length > 0 &&
     parseInt(custoDeslocamento, 10) >= 0 &&
     (step5 !== 'Automatizada' ||
@@ -188,7 +192,22 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
         />
       </div>
 
-      {/* Form - only when all 5 steps done */}
+      {/* Quantidade de Motores - só quando modo de abertura for Automatizada */}
+      {step5 === 'Automatizada' && (
+        <div className="mb-8">
+          <p className="text-sm font-medium text-white mb-3">Quantidade de Motores</p>
+          <StepButtons
+            options={[
+              { value: '1 Motor', label: '1 Motor' },
+              { value: '2 Motores', label: '2 Motores' },
+            ]}
+            value={quantidadeMotores}
+            onChange={(v) => setQuantidadeMotores(v as typeof quantidadeMotores)}
+          />
+        </div>
+      )}
+
+      {/* Form - only when all steps done (incl. quantidadeMotores when Automatizada) */}
       {canShowForm && (
         <div className="space-y-6 pt-4 border-t border-[var(--color-border)]">
           <h3 className="text-lg font-medium text-white">Dados do orçamento</h3>
@@ -207,14 +226,37 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
             }
           />
 
-          <CurrencyInput
-            id="valor-m2"
-            label="Valor por m²"
-            value={valorM2}
-            onChange={setValorM2}
-            placeholder="1.500,00"
-            hint="R$ 1.500,00"
-          />
+          {valorM2Locked ? (
+            <div className="flex flex-col gap-2">
+              <label className="block text-sm font-medium text-white">Valor por m²</label>
+              <div className="flex gap-2">
+                <input
+                  id="valor-m2"
+                  type="text"
+                  readOnly
+                  value={formatCurrencyDisplay(valorM2)}
+                  className="flex-1 py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white cursor-default"
+                  aria-readonly
+                />
+                <button
+                  type="button"
+                  onClick={() => setValorM2Locked(false)}
+                  className="shrink-0 self-stretch flex items-center px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] text-sm font-medium transition-colors"
+                >
+                  Alterar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <CurrencyInput
+              id="valor-m2"
+              label="Valor por m²"
+              value={valorM2}
+              onChange={setValorM2}
+              placeholder="1.500,00"
+              hint="R$ 1.500,00"
+            />
+          )}
 
           {step5 === 'Automatizada' && (
             <CurrencyInput
