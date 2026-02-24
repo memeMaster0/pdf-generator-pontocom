@@ -15,11 +15,15 @@ export type CorPolicarbonato =
   | 'Nenhuma'
   | null;
 export type DimensaoTubo = '100 x 50' | '150 x 50' | 'Manual' | null;
+export type TipoMedidas = 'area_unica' | 'duas_areas';
 
 export interface PergoladoFormData {
   tipoPolicarbonato: 'Compacto 3mm' | 'Alveolar 6mm';
   corPolicarbonato: 'Fumê' | 'Cinza refletivo' | 'Transparente' | 'Bronze' | 'Nenhuma';
+  tipoMedidas: TipoMedidas;
   medidas: string;
+  medidas1?: string;
+  medidas2?: string;
   dimensaoTubo: string; // texto a exibir no Excel: "100 x 50", "150 x 50" ou valor manual
   valorM2?: string; // em centavos; apenas quando dimensão foi Manual
   custoDeslocamento: string;
@@ -28,7 +32,10 @@ export interface PergoladoFormData {
 interface PergoladoState {
   tipoPolicarbonato: TipoPolicarbonato;
   corPolicarbonato: CorPolicarbonato;
+  tipoMedidas: TipoMedidas;
   medidas: string;
+  medidas1: string;
+  medidas2: string;
   dimensaoTubo: DimensaoTubo;
   dimensaoTuboManual: string;
   valorM2: string;
@@ -39,7 +46,10 @@ interface PergoladoState {
 type PergoladoAction =
   | { type: 'SET_TIPO_POLICARBONATO'; payload: TipoPolicarbonato }
   | { type: 'SET_COR_POLICARBONATO'; payload: CorPolicarbonato }
+  | { type: 'SET_TIPO_MEDIDAS'; payload: TipoMedidas }
   | { type: 'SET_MEDIDAS'; payload: string }
+  | { type: 'SET_MEDIDAS1'; payload: string }
+  | { type: 'SET_MEDIDAS2'; payload: string }
   | { type: 'SET_DIMENSAO_TUBO'; payload: DimensaoTubo }
   | { type: 'SET_DIMENSAO_TUBO_MANUAL'; payload: string }
   | { type: 'SET_VALOR_M2'; payload: string }
@@ -50,7 +60,10 @@ type PergoladoAction =
 const initialState: PergoladoState = {
   tipoPolicarbonato: null,
   corPolicarbonato: null,
+  tipoMedidas: 'area_unica',
   medidas: '',
+  medidas1: '',
+  medidas2: '',
   dimensaoTubo: null,
   dimensaoTuboManual: '',
   valorM2: '',
@@ -64,8 +77,14 @@ function pergoladoReducer(state: PergoladoState, action: PergoladoAction): Pergo
       return { ...state, tipoPolicarbonato: action.payload };
     case 'SET_COR_POLICARBONATO':
       return { ...state, corPolicarbonato: action.payload };
+    case 'SET_TIPO_MEDIDAS':
+      return { ...state, tipoMedidas: action.payload };
     case 'SET_MEDIDAS':
       return { ...state, medidas: action.payload };
+    case 'SET_MEDIDAS1':
+      return { ...state, medidas1: action.payload };
+    case 'SET_MEDIDAS2':
+      return { ...state, medidas2: action.payload };
     case 'SET_DIMENSAO_TUBO':
       return { ...state, dimensaoTubo: action.payload };
     case 'SET_DIMENSAO_TUBO_MANUAL':
@@ -86,7 +105,10 @@ function pergoladoReducer(state: PergoladoState, action: PergoladoAction): Pergo
 interface PergoladoContextValue extends PergoladoState {
   setTipoPolicarbonato: (v: TipoPolicarbonato) => void;
   setCorPolicarbonato: (v: CorPolicarbonato) => void;
+  setTipoMedidas: (v: TipoMedidas) => void;
   setMedidas: (v: string) => void;
+  setMedidas1: (v: string) => void;
+  setMedidas2: (v: string) => void;
   setDimensaoTubo: (v: DimensaoTubo) => void;
   setDimensaoTuboManual: (v: string) => void;
   setValorM2: (v: string) => void;
@@ -108,8 +130,17 @@ export function PergoladoProvider({ children }: { children: ReactNode }) {
   const setCorPolicarbonato = useCallback((payload: CorPolicarbonato) => {
     dispatch({ type: 'SET_COR_POLICARBONATO', payload });
   }, []);
+  const setTipoMedidas = useCallback((payload: TipoMedidas) => {
+    dispatch({ type: 'SET_TIPO_MEDIDAS', payload });
+  }, []);
   const setMedidas = useCallback((payload: string) => {
     dispatch({ type: 'SET_MEDIDAS', payload });
+  }, []);
+  const setMedidas1 = useCallback((payload: string) => {
+    dispatch({ type: 'SET_MEDIDAS1', payload });
+  }, []);
+  const setMedidas2 = useCallback((payload: string) => {
+    dispatch({ type: 'SET_MEDIDAS2', payload });
   }, []);
   const setDimensaoTubo = useCallback((payload: DimensaoTubo) => {
     dispatch({ type: 'SET_DIMENSAO_TUBO', payload });
@@ -135,6 +166,18 @@ export function PergoladoProvider({ children }: { children: ReactNode }) {
     state.corPolicarbonato !== null &&
     state.dimensaoTubo !== null;
 
+  const buildMedidasPayload = useCallback(() => {
+    if (state.tipoMedidas === 'duas_areas') {
+      return {
+        tipoMedidas: 'duas_areas' as const,
+        medidas: [state.medidas1, state.medidas2].filter(Boolean).join(' e '),
+        medidas1: state.medidas1,
+        medidas2: state.medidas2,
+      };
+    }
+    return { tipoMedidas: 'area_unica' as const, medidas: state.medidas };
+  }, [state.tipoMedidas, state.medidas, state.medidas1, state.medidas2]);
+
   const buildFormData = useCallback((): PergoladoFormData | null => {
     if (!state.tipoPolicarbonato || !state.corPolicarbonato || !state.dimensaoTubo) return null;
     const dimensaoExibir =
@@ -144,7 +187,7 @@ export function PergoladoProvider({ children }: { children: ReactNode }) {
     const result: PergoladoFormData = {
       tipoPolicarbonato: state.tipoPolicarbonato,
       corPolicarbonato: state.corPolicarbonato,
-      medidas: state.medidas,
+      ...buildMedidasPayload(),
       dimensaoTubo: dimensaoExibir,
       custoDeslocamento: state.custoDeslocamento,
     };
@@ -152,13 +195,16 @@ export function PergoladoProvider({ children }: { children: ReactNode }) {
       result.valorM2 = state.valorM2;
     }
     return result;
-  }, [state]);
+  }, [state, buildMedidasPayload]);
 
   const value: PergoladoContextValue = {
     ...state,
     setTipoPolicarbonato,
     setCorPolicarbonato,
+    setTipoMedidas,
     setMedidas,
+    setMedidas1,
+    setMedidas2,
     setDimensaoTubo,
     setDimensaoTuboManual,
     setValorM2,

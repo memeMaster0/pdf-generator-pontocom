@@ -43,6 +43,7 @@ function SlideOrcamentoCobertura({ data }: { data: CoberturaFormData }) {
         <CampoResumo label="Cor / Pintura" value={data.corOuPintura} />
         <CampoResumo label="Telha Térmica" value={data.telhaTermica} />
         <CampoResumo label="Forro PVC" value={data.forroPvc} />
+        <CampoResumo label="Tipo de medição" value={data.tipoMedidas === 'duas_areas' ? 'Duas áreas' : 'Área única'} />
         <CampoResumo label="Medidas da cobertura" value={data.medidas || '—'} />
         <CampoResumo label="Valor por m²" value={formatCurrency(data.valorM2)} />
         {data.temPilar === 'Sim' && (
@@ -66,6 +67,7 @@ function SlideOrcamentoPergolado({ data }: { data: PergoladoFormData }) {
       <div className="grid grid-cols-2 gap-x-6 gap-y-5">
         <CampoResumo label="Tipo do Policarbonato" value={data.tipoPolicarbonato} />
         <CampoResumo label="Cor" value={data.corPolicarbonato} />
+        <CampoResumo label="Tipo de medição" value={data.tipoMedidas === 'duas_areas' ? 'Duas áreas' : 'Área única'} />
         <CampoResumo label="Medidas do Pergolado" value={data.medidas || '—'} />
         <CampoResumo label="Dimensão do Tubo" value={data.dimensaoTubo} />
         {data.valorM2 !== undefined && data.valorM2 !== '' && (
@@ -99,6 +101,7 @@ function SlideOrcamentoCoberturaRetratil({ data }: { data: CoberturaRetratilForm
         {data.modoAbertura === 'Automatizada' && data.quantidadeMotores && (
           <CampoResumo label="Quantidade de Motores" value={data.quantidadeMotores} />
         )}
+        <CampoResumo label="Tipo de medição" value={data.tipoMedidas === 'duas_areas' ? 'Duas áreas' : 'Área única'} />
         <CampoResumo label="Medidas" value={data.medidas || '—'} />
         <CampoResumo label="Valor por m²" value={formatCurrency(data.valorM2)} />
         {data.modoAbertura === 'Automatizada' && (
@@ -160,7 +163,16 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
               corOuPintura: (data as CoberturaFormData).corOuPintura,
               telhaTermica: (data as CoberturaFormData).telhaTermica,
               forroPvc: (data as CoberturaFormData).forroPvc,
+              tipoMedidas: (data as CoberturaFormData).tipoMedidas,
               medidas: (data as CoberturaFormData).medidas,
+              ...((data as CoberturaFormData).tipoMedidas === 'duas_areas' &&
+              (data as CoberturaFormData).medidas1 != null &&
+              (data as CoberturaFormData).medidas2 != null
+                ? {
+                    medidas1: (data as CoberturaFormData).medidas1,
+                    medidas2: (data as CoberturaFormData).medidas2,
+                  }
+                : {}),
               valorM2: (data as CoberturaFormData).valorM2,
               valorPilar: (data as CoberturaFormData).valorPilar ?? '',
               medidaPilar: (data as CoberturaFormData).medidaPilar ?? '',
@@ -179,7 +191,16 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
                 ...(typeof (data as CoberturaRetratilFormData).quantidadeMotores !== 'undefined'
                   ? { quantidadeMotores: (data as CoberturaRetratilFormData).quantidadeMotores }
                   : {}),
+                tipoMedidas: (data as CoberturaRetratilFormData).tipoMedidas,
                 medidas: (data as CoberturaRetratilFormData).medidas,
+                ...((data as CoberturaRetratilFormData).tipoMedidas === 'duas_areas' &&
+                (data as CoberturaRetratilFormData).medidas1 != null &&
+                (data as CoberturaRetratilFormData).medidas2 != null
+                  ? {
+                      medidas1: (data as CoberturaRetratilFormData).medidas1,
+                      medidas2: (data as CoberturaRetratilFormData).medidas2,
+                    }
+                  : {}),
                 valorM2: (data as CoberturaRetratilFormData).valorM2,
                 custoAberturaAutomatizada: (data as CoberturaRetratilFormData)
                   .custoAberturaAutomatizada,
@@ -190,7 +211,16 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
                 tipoProposta: 'pergolado' as const,
                 tipoPolicarbonato: (data as PergoladoFormData).tipoPolicarbonato,
                 corPolicarbonato: (data as PergoladoFormData).corPolicarbonato,
+                tipoMedidas: (data as PergoladoFormData).tipoMedidas,
                 medidas: (data as PergoladoFormData).medidas,
+                ...((data as PergoladoFormData).tipoMedidas === 'duas_areas' &&
+                (data as PergoladoFormData).medidas1 != null &&
+                (data as PergoladoFormData).medidas2 != null
+                  ? {
+                      medidas1: (data as PergoladoFormData).medidas1,
+                      medidas2: (data as PergoladoFormData).medidas2,
+                    }
+                  : {}),
                 dimensaoTubo: (data as PergoladoFormData).dimensaoTubo,
                 ...(typeof (data as PergoladoFormData).valorM2 !== 'undefined' &&
                 (data as PergoladoFormData).valorM2 !== ''

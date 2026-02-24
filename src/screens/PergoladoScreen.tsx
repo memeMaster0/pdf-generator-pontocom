@@ -21,14 +21,20 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
   const {
     tipoPolicarbonato,
     corPolicarbonato,
+    tipoMedidas,
     medidas,
+    medidas1,
+    medidas2,
     dimensaoTubo,
     dimensaoTuboManual,
     valorM2,
     custoDeslocamento,
     setTipoPolicarbonato,
     setCorPolicarbonato,
+    setTipoMedidas,
     setMedidas,
+    setMedidas1,
+    setMedidas2,
     setDimensaoTubo,
     setDimensaoTuboManual,
     setValorM2,
@@ -45,7 +51,10 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
     setFormTouched(true);
     if (!canShowForm || !tipoPolicarbonato || !corPolicarbonato || !dimensaoTubo) return;
 
-    const okMedidas = validateMedidas(medidas);
+    const okMedidas =
+      tipoMedidas === 'area_unica'
+        ? validateMedidas(medidas)
+        : validateMedidas(medidas1) && validateMedidas(medidas2);
     const okManual =
       !isManual || (dimensaoTuboManual.trim().length > 0 && valorM2.length > 0 && parseInt(valorM2, 10) > 0);
     const okDeslocamento =
@@ -58,7 +67,7 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
   };
 
   const canSubmitForm =
-    validateMedidas(medidas) &&
+    (tipoMedidas === 'area_unica' ? validateMedidas(medidas) : validateMedidas(medidas1) && validateMedidas(medidas2)) &&
     (!isManual || (dimensaoTuboManual.trim().length > 0 && valorM2.length > 0 && parseInt(valorM2, 10) > 0)) &&
     custoDeslocamento.length > 0 &&
     parseInt(custoDeslocamento, 10) >= 0;
@@ -105,15 +114,49 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
 
       <div className="mb-8">
         <p className="text-sm font-medium text-white mb-3">3. Medidas do Pergolado</p>
-        <MedidasInput
-          id="medidas-pergolado"
-          label="Medidas"
-          value={medidas}
-          onChange={setMedidas}
-          placeholder="5,00m x 2,00m"
-          hint="5,00m x 2,00m"
-          error={formTouched && !validateMedidas(medidas) ? 'Use o formato: 5,00m x 2,00m' : undefined}
-        />
+        <div className="mb-4">
+          <p className="text-sm font-medium text-white mb-2">Tipo de medição</p>
+          <StepButtons
+            options={[
+              { value: 'area_unica', label: 'Área única' },
+              { value: 'duas_areas', label: 'Duas áreas' },
+            ]}
+            value={tipoMedidas}
+            onChange={(v) => setTipoMedidas(v as typeof tipoMedidas)}
+          />
+        </div>
+        {tipoMedidas === 'area_unica' ? (
+          <MedidasInput
+            id="medidas-pergolado"
+            label="Medidas"
+            value={medidas}
+            onChange={setMedidas}
+            placeholder="5,00m x 2,00m"
+            hint="5,00m x 2,00m"
+            error={undefined}
+          />
+        ) : (
+          <>
+            <MedidasInput
+              id="medidas1-pergolado"
+              label="Área 1 (medidas)"
+              value={medidas1}
+              onChange={setMedidas1}
+              placeholder="5,00m x 2,00m"
+              hint="5,00m x 2,00m"
+              error={undefined}
+            />
+            <MedidasInput
+              id="medidas2-pergolado"
+              label="Área 2 (medidas)"
+              value={medidas2}
+              onChange={setMedidas2}
+              placeholder="3,00m x 4,00m"
+              hint="3,00m x 4,00m"
+              error={undefined}
+            />
+          </>
+        )}
       </div>
 
       <div className="mb-8">

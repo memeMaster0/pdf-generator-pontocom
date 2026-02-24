@@ -237,6 +237,20 @@ def parse_medidas_m2(medidas: str) -> float:
     return round(a * b, 2)
 
 
+def get_total_m2(data: dict) -> float:
+    """
+    Retorna a área total em m² a partir do payload.
+    - Se tipoMedidas == "duas_areas" e existirem medidas1 e medidas2: m²₁ + m²₂.
+    - Caso contrário (área única ou payload antigo): parse_medidas_m2(medidas).
+    """
+    if data.get("tipoMedidas") == "duas_areas":
+        m1 = data.get("medidas1") or ""
+        m2 = data.get("medidas2") or ""
+        if m1 or m2:
+            return round(parse_medidas_m2(m1) + parse_medidas_m2(m2), 2)
+    return parse_medidas_m2(data.get("medidas") or "")
+
+
 # Valor por m² do forro vinílico (R$), somado ao total quando Forro PVC = Vinílico
 FORRO_VINILICO_VALOR_M2 = 120.0
 
@@ -250,13 +264,12 @@ def get_valor_total_reais(data: dict) -> float:
     Retorna o valor total em reais (float) com a mesma lógica de compute_valor_total.
     Usado para calcular o texto da forma de pagamento.
     """
-    medidas_str = data.get("medidas") or ""
     valor_m2_raw = data.get("valorM2") or ""
     valor_pilar_raw = (data.get("valorPilar") or "") if data.get("temPilar") == "Sim" else ""
     custo_raw = data.get("custoDeslocamento") or ""
     forro_pvc = (data.get("forroPvc") or "").strip()
 
-    m2 = parse_medidas_m2(medidas_str)
+    m2 = get_total_m2(data)
     valor_m2_reais = raw_to_reais(valor_m2_raw)
     valor_pilar_reais = raw_to_reais(valor_pilar_raw)
     custo_reais = raw_to_reais(custo_raw)
@@ -284,8 +297,7 @@ def get_valor_total_reais_pergolado(data: dict) -> float:
     Valor total para Pergolado: m² × valor por m² + custo de deslocamento.
     Se valorM2 veio no payload (dimensão manual), usa esse valor; senão usa a tabela fixa.
     """
-    medidas_str = data.get("medidas") or ""
-    m2 = parse_medidas_m2(medidas_str)
+    m2 = get_total_m2(data)
     valor_m2_raw = data.get("valorM2")
     if valor_m2_raw and str(valor_m2_raw).strip():
         valor_m2_reais = raw_to_reais(str(valor_m2_raw))
@@ -304,8 +316,7 @@ def get_valor_cobertura_retratil_reais(data: dict) -> float:
     Usado como base para cálculo de juros (5x/10x) e para [Valor Total].
     Fórmula: (m² × valor por m²) + custo deslocamento.
     """
-    medidas_str = data.get("medidas") or ""
-    m2 = parse_medidas_m2(medidas_str)
+    m2 = get_total_m2(data)
     valor_m2_reais = raw_to_reais(data.get("valorM2") or "")
     custo_desloc_reais = raw_to_reais(data.get("custoDeslocamento") or "")
     return round(m2 * valor_m2_reais + custo_desloc_reais, 2)
@@ -353,13 +364,12 @@ def compute_valor_total(data: dict) -> str:
     Valores no JSON vêm em centavos (ex: "150000" = R$ 1.500,00).
     Retorna string formatada (ex: 'R$ 16.500,00').
     """
-    medidas_str = data.get("medidas") or ""
     valor_m2_raw = data.get("valorM2") or ""
     valor_pilar_raw = (data.get("valorPilar") or "") if data.get("temPilar") == "Sim" else ""
     custo_raw = data.get("custoDeslocamento") or ""
     forro_pvc = (data.get("forroPvc") or "").strip()
 
-    m2 = parse_medidas_m2(medidas_str)
+    m2 = get_total_m2(data)
     valor_m2_reais = raw_to_reais(valor_m2_raw)
     valor_pilar_reais = raw_to_reais(valor_pilar_raw)
     custo_reais = raw_to_reais(custo_raw)
@@ -482,6 +492,12 @@ def main() -> int:
     # Data atual = momento da geração do PDF; formato brasileiro dd/mm/yyyy (dia/mês/ano)
     _hoje = datetime.now()
     data["dataAtual"] = f"{_hoje.day:02d}/{_hoje.month:02d}/{_hoje.year}"
+
+    # Duas áreas: garantir "medidas" para placeholders/Excel se vier só medidas1 e medidas2
+    if data.get("tipoMedidas") == "duas_areas":
+        m1, m2 = (data.get("medidas1") or "").strip(), (data.get("medidas2") or "").strip()
+        if m1 and m2 and not (data.get("medidas") or "").strip():
+            data["medidas"] = f"{m1} e {m2}"
 
     is_pergolado = data.get("tipoProposta") == "pergolado"
     is_cobertura_retratil = data.get("tipoProposta") == "cobertura_retratil"

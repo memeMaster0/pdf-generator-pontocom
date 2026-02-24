@@ -23,7 +23,10 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
     step3,
     step4,
     step5,
+    tipoMedidas,
     medidas,
+    medidas1,
+    medidas2,
     valorM2,
     valorPilar,
     medidaPilar,
@@ -33,12 +36,16 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
     setStep3,
     setStep4,
     setStep5,
+    setTipoMedidas,
     setMedidas,
+    setMedidas1,
+    setMedidas2,
     setValorM2,
     setValorPilar,
     setMedidaPilar,
     setCustoDeslocamento,
     canShowForm,
+    buildFormData,
     formTouched,
     setFormTouched,
   } = useCobertura();
@@ -59,7 +66,10 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
     setFormTouched(true);
     if (!canShowForm || !step1 || !step2 || !step3 || !step4 || !step5) return;
 
-    const okMedidas = validateMedidas(medidas);
+    const okMedidas =
+      tipoMedidas === 'area_unica'
+        ? validateMedidas(medidas)
+        : validateMedidas(medidas1) && validateMedidas(medidas2);
     const okValorM2 = valorM2.length > 0 && parseInt(valorM2, 10) > 0;
     const okPilar = step2 !== 'Sim' || (valorPilar.length > 0 && parseInt(valorPilar, 10) >= 0);
     const okMedidaPilar = step2 !== 'Sim' || medidaPilar.trim().length > 0;
@@ -67,24 +77,12 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
 
     if (!okMedidas || !okValorM2 || !okPilar || !okMedidaPilar || !okDeslocamento) return;
 
-    // Montar dados com os valores atuais do formulário (evita closure desatualizada do context)
-    const data: CoberturaFormData = {
-      tipoCobertura: step1,
-      temPilar: step2,
-      corOuPintura: step3,
-      telhaTermica: step4,
-      forroPvc: step5,
-      medidas,
-      valorM2,
-      valorPilar: step2 === 'Sim' ? valorPilar : null,
-      medidaPilar: step2 === 'Sim' ? medidaPilar.trim() || null : null,
-      custoDeslocamento,
-    };
-    onConfirm(data);
+    const data = buildFormData();
+    if (data) onConfirm(data);
   };
 
   const canSubmitForm =
-    validateMedidas(medidas) &&
+    (tipoMedidas === 'area_unica' ? validateMedidas(medidas) : validateMedidas(medidas1) && validateMedidas(medidas2)) &&
     valorM2.length > 0 &&
     parseInt(valorM2, 10) > 0 &&
     (step2 !== 'Sim' || (valorPilar.length > 0 && parseInt(valorPilar, 10) >= 0)) &&
@@ -187,15 +185,50 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
         <div className="space-y-6 pt-4 border-t border-[var(--color-border)]">
           <h3 className="text-lg font-medium text-white">Dados do orçamento</h3>
 
-          <MedidasInput
-            id="medidas"
-            label="Medidas da cobertura"
-            value={medidas}
-            onChange={setMedidas}
-            placeholder="5,00m x 2,00m"
-            hint="5,00m x 2,00m"
-            error={formTouched && !validateMedidas(medidas) ? 'Use o formato: 5,00m x 2,00m' : undefined}
-          />
+          <div>
+            <p className="text-sm font-medium text-white mb-3">Tipo de medição</p>
+            <StepButtons
+              options={[
+                { value: 'area_unica', label: 'Área única' },
+                { value: 'duas_areas', label: 'Duas áreas' },
+              ]}
+              value={tipoMedidas}
+              onChange={(v) => setTipoMedidas(v as typeof tipoMedidas)}
+            />
+          </div>
+
+          {tipoMedidas === 'area_unica' ? (
+            <MedidasInput
+              id="medidas"
+              label="Medidas da cobertura"
+              value={medidas}
+              onChange={setMedidas}
+              placeholder="5,00m x 2,00m"
+              hint="5,00m x 2,00m"
+              error={undefined}
+            />
+          ) : (
+            <>
+              <MedidasInput
+                id="medidas1"
+                label="Área 1 (medidas)"
+                value={medidas1}
+                onChange={setMedidas1}
+                placeholder="5,00m x 2,00m"
+                hint="5,00m x 2,00m"
+                error={undefined}
+              />
+              <MedidasInput
+                id="medidas2"
+                label="Área 2 (medidas)"
+                value={medidas2}
+                onChange={setMedidas2}
+                placeholder="3,00m x 4,00m"
+                hint="3,00m x 4,00m"
+                error={undefined}
+              />
+            </>
+          )}
 
           <CurrencyInput
             id="valor-m2"

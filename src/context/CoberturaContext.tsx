@@ -11,6 +11,7 @@ export type TemPilar = 'Sim' | 'Não' | null;
 export type CorACM = 'Preto' | 'Branco' | 'Cinza';
 export type TelhaTermica = '30mm' | '50mm' | null;
 export type ForroPvc = 'Tradicional' | 'Vinílico' | null;
+export type TipoMedidas = 'area_unica' | 'duas_areas';
 
 export interface CoberturaFormData {
   tipoCobertura: 'ACM' | 'Chapa Metálica';
@@ -18,7 +19,10 @@ export interface CoberturaFormData {
   corOuPintura: string;
   telhaTermica: '30mm' | '50mm';
   forroPvc: 'Tradicional' | 'Vinílico';
+  tipoMedidas: TipoMedidas;
   medidas: string;
+  medidas1?: string;
+  medidas2?: string;
   valorM2: string;
   valorPilar: string | null;
   medidaPilar: string | null;
@@ -31,7 +35,10 @@ interface CoberturaState {
   step3: string | null;
   step4: TelhaTermica;
   step5: ForroPvc;
+  tipoMedidas: TipoMedidas;
   medidas: string;
+  medidas1: string;
+  medidas2: string;
   valorM2: string;
   valorPilar: string;
   medidaPilar: string;
@@ -45,7 +52,10 @@ type CoberturaAction =
   | { type: 'SET_STEP3'; payload: string | null }
   | { type: 'SET_STEP4'; payload: TelhaTermica }
   | { type: 'SET_STEP5'; payload: ForroPvc }
+  | { type: 'SET_TIPO_MEDIDAS'; payload: TipoMedidas }
   | { type: 'SET_MEDIDAS'; payload: string }
+  | { type: 'SET_MEDIDAS1'; payload: string }
+  | { type: 'SET_MEDIDAS2'; payload: string }
   | { type: 'SET_VALOR_M2'; payload: string }
   | { type: 'SET_VALOR_PILAR'; payload: string }
   | { type: 'SET_MEDIDA_PILAR'; payload: string }
@@ -59,7 +69,10 @@ const initialState: CoberturaState = {
   step3: null,
   step4: null,
   step5: null,
+  tipoMedidas: 'area_unica',
   medidas: '',
+  medidas1: '',
+  medidas2: '',
   valorM2: '',
   valorPilar: '',
   medidaPilar: '',
@@ -92,8 +105,14 @@ function coberturaReducer(state: CoberturaState, action: CoberturaAction): Cober
       return { ...state, step4: action.payload, step5: null };
     case 'SET_STEP5':
       return { ...state, step5: action.payload };
+    case 'SET_TIPO_MEDIDAS':
+      return { ...state, tipoMedidas: action.payload };
     case 'SET_MEDIDAS':
       return { ...state, medidas: action.payload };
+    case 'SET_MEDIDAS1':
+      return { ...state, medidas1: action.payload };
+    case 'SET_MEDIDAS2':
+      return { ...state, medidas2: action.payload };
     case 'SET_VALOR_M2':
       return { ...state, valorM2: action.payload };
     case 'SET_VALOR_PILAR':
@@ -117,7 +136,10 @@ interface CoberturaContextValue extends CoberturaState {
   setStep3: (v: string | null) => void;
   setStep4: (v: TelhaTermica) => void;
   setStep5: (v: ForroPvc) => void;
+  setTipoMedidas: (v: TipoMedidas) => void;
   setMedidas: (v: string) => void;
+  setMedidas1: (v: string) => void;
+  setMedidas2: (v: string) => void;
   setValorM2: (v: string) => void;
   setValorPilar: (v: string) => void;
   setMedidaPilar: (v: string) => void;
@@ -148,8 +170,17 @@ export function CoberturaProvider({ children }: { children: ReactNode }) {
   const setStep5 = useCallback((payload: ForroPvc) => {
     dispatch({ type: 'SET_STEP5', payload });
   }, []);
+  const setTipoMedidas = useCallback((payload: TipoMedidas) => {
+    dispatch({ type: 'SET_TIPO_MEDIDAS', payload });
+  }, []);
   const setMedidas = useCallback((payload: string) => {
     dispatch({ type: 'SET_MEDIDAS', payload });
+  }, []);
+  const setMedidas1 = useCallback((payload: string) => {
+    dispatch({ type: 'SET_MEDIDAS1', payload });
+  }, []);
+  const setMedidas2 = useCallback((payload: string) => {
+    dispatch({ type: 'SET_MEDIDAS2', payload });
   }, []);
   const setValorM2 = useCallback((payload: string) => {
     dispatch({ type: 'SET_VALOR_M2', payload });
@@ -173,6 +204,18 @@ export function CoberturaProvider({ children }: { children: ReactNode }) {
   const canShowForm =
     state.step1 !== null && state.step2 !== null && state.step3 !== null && state.step4 !== null && state.step5 !== null;
 
+  const buildMedidasPayload = useCallback(() => {
+    if (state.tipoMedidas === 'duas_areas') {
+      return {
+        tipoMedidas: 'duas_areas' as const,
+        medidas: [state.medidas1, state.medidas2].filter(Boolean).join(' e '),
+        medidas1: state.medidas1,
+        medidas2: state.medidas2,
+      };
+    }
+    return { tipoMedidas: 'area_unica' as const, medidas: state.medidas };
+  }, [state.tipoMedidas, state.medidas, state.medidas1, state.medidas2]);
+
   const buildFormData = useCallback((): CoberturaFormData | null => {
     if (!state.step1 || !state.step2 || !state.step3 || !state.step4 || !state.step5) return null;
     return {
@@ -181,13 +224,13 @@ export function CoberturaProvider({ children }: { children: ReactNode }) {
       corOuPintura: state.step3,
       telhaTermica: state.step4,
       forroPvc: state.step5,
-      medidas: state.medidas,
+      ...buildMedidasPayload(),
       valorM2: state.valorM2,
       valorPilar: state.step2 === 'Sim' ? state.valorPilar : null,
       medidaPilar: state.step2 === 'Sim' ? (state.medidaPilar || null) : null,
       custoDeslocamento: state.custoDeslocamento,
     };
-  }, [state]);
+  }, [state, buildMedidasPayload]);
 
   const value: CoberturaContextValue = {
     ...state,
@@ -196,7 +239,10 @@ export function CoberturaProvider({ children }: { children: ReactNode }) {
     setStep3,
     setStep4,
     setStep5,
+    setTipoMedidas,
     setMedidas,
+    setMedidas1,
+    setMedidas2,
     setValorM2,
     setValorPilar,
     setMedidaPilar,

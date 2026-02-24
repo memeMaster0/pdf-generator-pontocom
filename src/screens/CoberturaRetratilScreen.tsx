@@ -18,7 +18,10 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     step5,
     quantidadeMotores,
     corEstruturaOutra,
+    tipoMedidas,
     medidas,
+    medidas1,
+    medidas2,
     valorM2,
     valorM2Locked,
     custoAberturaAutomatizada,
@@ -30,7 +33,10 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     setStep5,
     setQuantidadeMotores,
     setCorEstruturaOutra,
+    setTipoMedidas,
     setMedidas,
+    setMedidas1,
+    setMedidas2,
     setValorM2,
     setValorM2Locked,
     setCustoAberturaAutomatizada,
@@ -51,7 +57,10 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     const data = buildFormData();
     if (!data) return;
 
-    const okMedidas = validateMedidas(medidas);
+    const okMedidas =
+      tipoMedidas === 'area_unica'
+        ? validateMedidas(medidas)
+        : validateMedidas(medidas1) && validateMedidas(medidas2);
     const okValorM2 =
       valorM2Locked || (valorM2.length > 0 && parseInt(valorM2, 10) > 0);
     const okDeslocamento = custoDeslocamento.length > 0 && parseInt(custoDeslocamento, 10) >= 0;
@@ -65,7 +74,7 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
   };
 
   const canSubmitForm =
-    validateMedidas(medidas) &&
+    (tipoMedidas === 'area_unica' ? validateMedidas(medidas) : validateMedidas(medidas1) && validateMedidas(medidas2)) &&
     (valorM2Locked || (valorM2.length > 0 && parseInt(valorM2, 10) > 0)) &&
     custoDeslocamento.length > 0 &&
     parseInt(custoDeslocamento, 10) >= 0 &&
@@ -212,19 +221,50 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
         <div className="space-y-6 pt-4 border-t border-[var(--color-border)]">
           <h3 className="text-lg font-medium text-white">Dados do orçamento</h3>
 
-          <MedidasInput
-            id="medidas"
-            label="Medidas"
-            value={medidas}
-            onChange={setMedidas}
-            placeholder="5,00m x 2,00m"
-            hint="5,00m x 2,00m"
-            error={
-              formTouched && !validateMedidas(medidas)
-                ? 'Use o formato: 5,00m x 2,00m'
-                : undefined
-            }
-          />
+          <div>
+            <p className="text-sm font-medium text-white mb-3">Tipo de medição</p>
+            <StepButtons
+              options={[
+                { value: 'area_unica', label: 'Área única' },
+                { value: 'duas_areas', label: 'Duas áreas' },
+              ]}
+              value={tipoMedidas}
+              onChange={(v) => setTipoMedidas(v as typeof tipoMedidas)}
+            />
+          </div>
+
+          {tipoMedidas === 'area_unica' ? (
+            <MedidasInput
+              id="medidas"
+              label="Medidas"
+              value={medidas}
+              onChange={setMedidas}
+              placeholder="5,00m x 2,00m"
+              hint="5,00m x 2,00m"
+              error={undefined}
+            />
+          ) : (
+            <>
+              <MedidasInput
+                id="medidas1"
+                label="Área 1 (medidas)"
+                value={medidas1}
+                onChange={setMedidas1}
+                placeholder="5,00m x 2,00m"
+                hint="5,00m x 2,00m"
+                error={undefined}
+              />
+              <MedidasInput
+                id="medidas2"
+                label="Área 2 (medidas)"
+                value={medidas2}
+                onChange={setMedidas2}
+                placeholder="3,00m x 4,00m"
+                hint="3,00m x 4,00m"
+                error={undefined}
+              />
+            </>
+          )}
 
           {valorM2Locked ? (
             <div className="flex flex-col gap-2">
