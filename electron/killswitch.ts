@@ -2,7 +2,7 @@ import { net } from 'electron';
 
 // Substitua pela URL raw do seu GitHub Gist antes do primeiro build de produção.
 // Formato: https://gist.githubusercontent.com/<USER>/<GIST_ID>/raw/killswitch.json
-const KILLSWITCH_URL = 'COLE_SUA_URL_DO_GIST_AQUI';
+const KILLSWITCH_URL = 'https://gist.githubusercontent.com/pedroth-dev/6990b1844f58da81c2fc0aca0d2b635f/raw/22d2cd49f7976fd33b37243c698bcca91500d0f7/killswitch.json';
 
 export async function checkKillSwitch(): Promise<boolean> {
   try {
