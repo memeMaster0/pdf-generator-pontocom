@@ -2,13 +2,14 @@ import { useState } from 'react';
 import type { CoberturaFormData } from '../context/CoberturaContext';
 import type { PergoladoFormData } from '../context/PergoladoContext';
 import type { CoberturaRetratilFormData } from '../context/CoberturaRetratilContext';
+import type { PortaFormData } from '../context/PortaContext';
 import type { TipoOrcamento } from '../App';
 import type { ClienteFormData } from './ClienteScreen';
 import { ResumoCarousel } from '../components/ResumoCarousel';
 import { capitalize } from '../utils/formatadores';
 
 interface ConfirmacaoScreenProps {
-  data: CoberturaFormData | PergoladoFormData | CoberturaRetratilFormData;
+  data: CoberturaFormData | PergoladoFormData | CoberturaRetratilFormData | PortaFormData;
   tipoOrcamento: TipoOrcamento;
   clienteData: ClienteFormData;
   onBack: () => void;
@@ -43,8 +44,26 @@ function SlideOrcamentoCobertura({ data }: { data: CoberturaFormData }) {
         <CampoResumo label="Cor / Pintura" value={data.corOuPintura} />
         <CampoResumo label="Telha Térmica" value={data.telhaTermica} />
         <CampoResumo label="Forro PVC" value={data.forroPvc} />
-        <CampoResumo label="Tipo de medição" value={data.tipoMedidas === 'duas_areas' ? 'Duas áreas' : 'Área única'} />
-        <CampoResumo label="Medidas da cobertura" value={data.medidas || '—'} />
+        <CampoResumo
+          label="Tipo de medição"
+          value={
+            data.tipoMedidas === 'duas_areas'
+              ? 'Duas áreas'
+              : data.tipoMedidas === 'tres_areas'
+                ? 'Três áreas'
+                : data.tipoMedidas === 'm2_direto'
+                  ? 'Informar m² direto'
+                  : 'Área única'
+          }
+        />
+        <CampoResumo
+          label="Medidas da cobertura"
+          value={
+            data.tipoMedidas === 'm2_direto' && data.m2Direto
+              ? `${data.m2Direto} m²`
+              : data.medidas || '—'
+          }
+        />
         <CampoResumo label="Valor por m²" value={formatCurrency(data.valorM2)} />
         {data.temPilar === 'Sim' && (
           <>
@@ -67,8 +86,26 @@ function SlideOrcamentoPergolado({ data }: { data: PergoladoFormData }) {
       <div className="grid grid-cols-2 gap-x-6 gap-y-5">
         <CampoResumo label="Tipo do Policarbonato" value={data.tipoPolicarbonato} />
         <CampoResumo label="Cor" value={data.corPolicarbonato} />
-        <CampoResumo label="Tipo de medição" value={data.tipoMedidas === 'duas_areas' ? 'Duas áreas' : 'Área única'} />
-        <CampoResumo label="Medidas do Pergolado" value={data.medidas || '—'} />
+        <CampoResumo
+          label="Tipo de medição"
+          value={
+            data.tipoMedidas === 'duas_areas'
+              ? 'Duas áreas'
+              : data.tipoMedidas === 'tres_areas'
+                ? 'Três áreas'
+                : data.tipoMedidas === 'm2_direto'
+                  ? 'Informar m² direto'
+                  : 'Área única'
+          }
+        />
+        <CampoResumo
+          label="Medidas do Pergolado"
+          value={
+            data.tipoMedidas === 'm2_direto' && data.m2Direto
+              ? `${data.m2Direto} m²`
+              : data.medidas || '—'
+          }
+        />
         <CampoResumo label="Dimensão do Tubo" value={data.dimensaoTubo} />
         {data.valorM2 !== undefined && data.valorM2 !== '' && (
           <CampoResumo label="Valor por m²" value={formatCurrency(data.valorM2)} />
@@ -101,8 +138,26 @@ function SlideOrcamentoCoberturaRetratil({ data }: { data: CoberturaRetratilForm
         {data.modoAbertura === 'Automatizada' && data.quantidadeMotores && (
           <CampoResumo label="Quantidade de Motores" value={data.quantidadeMotores} />
         )}
-        <CampoResumo label="Tipo de medição" value={data.tipoMedidas === 'duas_areas' ? 'Duas áreas' : 'Área única'} />
-        <CampoResumo label="Medidas" value={data.medidas || '—'} />
+        <CampoResumo
+          label="Tipo de medição"
+          value={
+            data.tipoMedidas === 'duas_areas'
+              ? 'Duas áreas'
+              : data.tipoMedidas === 'tres_areas'
+                ? 'Três áreas'
+                : data.tipoMedidas === 'm2_direto'
+                  ? 'Informar m² direto'
+                  : 'Área única'
+          }
+        />
+        <CampoResumo
+          label="Medidas"
+          value={
+            data.tipoMedidas === 'm2_direto' && data.m2Direto
+              ? `${data.m2Direto} m²`
+              : data.medidas || '—'
+          }
+        />
         <CampoResumo label="Valor por m²" value={formatCurrency(data.valorM2)} />
         {data.modoAbertura === 'Automatizada' && (
           <CampoResumo
@@ -110,6 +165,42 @@ function SlideOrcamentoCoberturaRetratil({ data }: { data: CoberturaRetratilForm
             value={formatCurrency(data.custoAberturaAutomatizada)}
           />
         )}
+        <CampoResumo label="Custo de Deslocamento" value={formatCurrency(data.custoDeslocamento)} />
+      </div>
+    </div>
+  );
+}
+
+function SlideOrcamentoPorta({ data }: { data: PortaFormData }) {
+  return (
+    <div className="space-y-5">
+      <h3 className="text-sm font-semibold text-[var(--color-accent)] uppercase tracking-wider mb-4">
+        Orçamento
+      </h3>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+        <CampoResumo label="Modelo da Porta" value={data.modeloPorta} />
+        <CampoResumo label="Modo de Puxador" value={data.modoPuxador} />
+        <CampoResumo label="Sistema de Abertura" value={data.sistemaAbertura} />
+        <CampoResumo label="Estilo de Folha" value={data.estiloFolha} />
+        {data.acondicionamentoEfetivo && (
+          <CampoResumo label="Acondicionamento" value={data.acondicionamentoEfetivo} />
+        )}
+        <CampoResumo
+          label="Itens complementares"
+          value={[data.bandeirola && 'Bandeirola', data.alizar && 'Alizar'].filter(Boolean).join(', ') || 'Nenhum'}
+        />
+        <CampoResumo label="Medidas da Porta" value={data.medidasPorta || '—'} />
+        <CampoResumo label="Medidas da Porta Geral" value={data.medidasPortaGeral || '—'} />
+        <CampoResumo label="m²" value={data.m2 > 0 ? String(data.m2) : '—'} />
+        {data.bandeirola && data.medidasBandeirola && (
+          <CampoResumo label="Medidas da Bandeirola" value={data.medidasBandeirola} />
+        )}
+        {data.alizar && data.medidaAlizar && (
+          <CampoResumo label="Medida do Alizar" value={data.medidaAlizar} />
+        )}
+        <CampoResumo label="Pintura" value={data.corPintura || data.pinturaPorta} />
+        <CampoResumo label="Modo de Entrega" value={data.modoEntrega} />
+        <CampoResumo label="Valor por m²" value={formatCurrency(data.valorM2)} />
         <CampoResumo label="Custo de Deslocamento" value={formatCurrency(data.custoDeslocamento)} />
       </div>
     </div>
@@ -172,11 +263,27 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
                     medidas1: (data as CoberturaFormData).medidas1,
                     medidas2: (data as CoberturaFormData).medidas2,
                   }
-                : {}),
+                : (data as CoberturaFormData).tipoMedidas === 'tres_areas' &&
+                  (data as CoberturaFormData).medidas1 != null &&
+                  (data as CoberturaFormData).medidas2 != null &&
+                  (data as CoberturaFormData).medidas3 != null
+                  ? {
+                      medidas1: (data as CoberturaFormData).medidas1,
+                      medidas2: (data as CoberturaFormData).medidas2,
+                      medidas3: (data as CoberturaFormData).medidas3,
+                    }
+                  : (data as CoberturaFormData).tipoMedidas === 'm2_direto' &&
+                    (data as CoberturaFormData).m2Direto
+                    ? { m2Direto: (data as CoberturaFormData).m2Direto }
+                    : {}),
               valorM2: (data as CoberturaFormData).valorM2,
               valorPilar: (data as CoberturaFormData).valorPilar ?? '',
               medidaPilar: (data as CoberturaFormData).medidaPilar ?? '',
               custoDeslocamento: (data as CoberturaFormData).custoDeslocamento,
+              ...(typeof (data as CoberturaFormData).descricaoAdicional === 'string' &&
+              (data as CoberturaFormData).descricaoAdicional
+                ? { descricaoAdicional: (data as CoberturaFormData).descricaoAdicional }
+                : {}),
               ...basePayload,
             }
           : tipoOrcamento === 'cobertura_retratil'
@@ -200,14 +307,63 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
                       medidas1: (data as CoberturaRetratilFormData).medidas1,
                       medidas2: (data as CoberturaRetratilFormData).medidas2,
                     }
-                  : {}),
+                  : (data as CoberturaRetratilFormData).tipoMedidas === 'tres_areas' &&
+                    (data as CoberturaRetratilFormData).medidas1 != null &&
+                    (data as CoberturaRetratilFormData).medidas2 != null &&
+                    (data as CoberturaRetratilFormData).medidas3 != null
+                    ? {
+                        medidas1: (data as CoberturaRetratilFormData).medidas1,
+                        medidas2: (data as CoberturaRetratilFormData).medidas2,
+                        medidas3: (data as CoberturaRetratilFormData).medidas3,
+                      }
+                    : (data as CoberturaRetratilFormData).tipoMedidas === 'm2_direto' &&
+                      (data as CoberturaRetratilFormData).m2Direto
+                      ? { m2Direto: (data as CoberturaRetratilFormData).m2Direto }
+                      : {}),
                 valorM2: (data as CoberturaRetratilFormData).valorM2,
                 custoAberturaAutomatizada: (data as CoberturaRetratilFormData)
                   .custoAberturaAutomatizada,
                 custoDeslocamento: (data as CoberturaRetratilFormData).custoDeslocamento,
                 ...basePayload,
               }
-            : {
+            : tipoOrcamento === 'porta'
+              ? (() => {
+                  const d = data as PortaFormData;
+                  return {
+                    tipoProposta: 'porta' as const,
+                    modeloPorta: d.modeloPorta,
+                    modoPuxador: d.modoPuxador,
+                    sistemaAbertura: d.sistemaAbertura,
+                    estiloFolha: d.estiloFolha,
+                    acondicionamentoEfetivo: d.acondicionamentoEfetivo,
+                    espessuraChapa: d.espessuraChapa,
+                    bandeirola: d.bandeirola,
+                    alizar: d.alizar,
+                    pinturaPorta: d.pinturaPorta,
+                    corPintura: d.corPintura,
+                    valorM2: d.valorM2,
+                    alturaPorta: d.alturaPorta,
+                    larguraPorta: d.larguraPorta,
+                    medidasPorta: d.medidasPorta,
+                    medidasPortaGeral: d.medidasPortaGeral,
+                    m2: d.m2,
+                    ...(d.bandeirola && d.alturaBandeirola != null && d.larguraBandeirola != null
+                      ? {
+                          alturaBandeirola: d.alturaBandeirola,
+                          larguraBandeirola: d.larguraBandeirola,
+                          medidasBandeirola: d.medidasBandeirola,
+                        }
+                      : {}),
+                    ...(d.alizar && d.medidaAlizar ? { medidaAlizar: d.medidaAlizar } : {}),
+                    custoDeslocamento: d.custoDeslocamento,
+                    modoEntrega: d.modoEntrega,
+                    ...(typeof d.descricaoAdicional === 'string' && d.descricaoAdicional
+                      ? { descricaoAdicional: d.descricaoAdicional }
+                      : {}),
+                    ...basePayload,
+                  };
+                })()
+              : {
                 tipoProposta: 'pergolado' as const,
                 tipoPolicarbonato: (data as PergoladoFormData).tipoPolicarbonato,
                 corPolicarbonato: (data as PergoladoFormData).corPolicarbonato,
@@ -220,13 +376,29 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
                       medidas1: (data as PergoladoFormData).medidas1,
                       medidas2: (data as PergoladoFormData).medidas2,
                     }
-                  : {}),
+                  : (data as PergoladoFormData).tipoMedidas === 'tres_areas' &&
+                    (data as PergoladoFormData).medidas1 != null &&
+                    (data as PergoladoFormData).medidas2 != null &&
+                    (data as PergoladoFormData).medidas3 != null
+                    ? {
+                        medidas1: (data as PergoladoFormData).medidas1,
+                        medidas2: (data as PergoladoFormData).medidas2,
+                        medidas3: (data as PergoladoFormData).medidas3,
+                      }
+                    : (data as PergoladoFormData).tipoMedidas === 'm2_direto' &&
+                      (data as PergoladoFormData).m2Direto
+                      ? { m2Direto: (data as PergoladoFormData).m2Direto }
+                      : {}),
                 dimensaoTubo: (data as PergoladoFormData).dimensaoTubo,
                 ...(typeof (data as PergoladoFormData).valorM2 !== 'undefined' &&
                 (data as PergoladoFormData).valorM2 !== ''
                   ? { valorM2: (data as PergoladoFormData).valorM2 }
                   : {}),
                 custoDeslocamento: (data as PergoladoFormData).custoDeslocamento,
+                ...(typeof (data as PergoladoFormData).descricaoAdicional === 'string' &&
+                (data as PergoladoFormData).descricaoAdicional
+                  ? { descricaoAdicional: (data as PergoladoFormData).descricaoAdicional }
+                  : {}),
                 ...basePayload,
               };
 
@@ -248,12 +420,14 @@ export function ConfirmacaoScreen({ data, tipoOrcamento, clienteData, onBack }: 
       <SlideOrcamentoCobertura data={data as CoberturaFormData} />
     ) : tipoOrcamento === 'cobertura_retratil' ? (
       <SlideOrcamentoCoberturaRetratil data={data as CoberturaRetratilFormData} />
+    ) : tipoOrcamento === 'porta' ? (
+      <SlideOrcamentoPorta data={data as PortaFormData} />
     ) : (
       <SlideOrcamentoPergolado data={data as PergoladoFormData} />
     );
 
   return (
-    <div className="min-h-full flex flex-col px-6 py-8 max-w-2xl mx-auto">
+    <div className="min-h-full flex flex-col px-6 py-8 max-w-5xl mx-auto w-full">
       <button
         type="button"
         onClick={onBack}

@@ -31,7 +31,7 @@ export function MedidasInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full py-3 px-4 rounded-[var(--radius)] border bg-[var(--color-surface)] text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-opacity-30 transition-all"
+        className="w-full max-w-[200px] py-3 px-4 rounded-[var(--radius)] border bg-[var(--color-surface)] text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-opacity-30 transition-all"
       />
       {hint && (
         <p className="text-xs text-[var(--color-text-muted)]">Ex: {hint}</p>
@@ -47,6 +47,14 @@ export function validateMedidas(medidas: string): boolean {
   const trimmed = medidas.trim();
   if (!trimmed) return false;
   return MEDIDAS_REGEX.test(trimmed) || MEDIDAS_REGEX_LOOSE.test(trimmed);
+}
+
+/** Valida valor de m² informado diretamente (ex.: "25,50" ou "25.50"). */
+export function validateM2Direto(value: string): boolean {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return false;
+  const n = parseFloat(trimmed.replace(',', '.'));
+  return Number.isFinite(n) && n > 0;
 }
 
 export function normalizeMedidas(medidas: string): string {

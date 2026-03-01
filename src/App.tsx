@@ -2,36 +2,41 @@ import { useState } from 'react';
 import { CoberturaProvider, useCobertura } from './context/CoberturaContext';
 import { PergoladoProvider, usePergolado } from './context/PergoladoContext';
 import { CoberturaRetratilProvider, useCoberturaRetratil } from './context/CoberturaRetratilContext';
+import { PortaProvider, usePorta } from './context/PortaContext';
 import { TitleBar } from './components/TitleBar';
 import { HomeScreen } from './screens/HomeScreen';
 import { CoberturaPremiumScreen } from './screens/CoberturaPremiumScreen';
 import { PergoladoScreen } from './screens/PergoladoScreen';
 import { CoberturaRetratilScreen } from './screens/CoberturaRetratilScreen';
+import { PortaScreen } from './screens/PortaScreen';
 import { ClienteScreen } from './screens/ClienteScreen';
 import { ConfirmacaoScreen } from './screens/ConfirmacaoScreen';
 import type { CoberturaFormData } from './context/CoberturaContext';
 import type { PergoladoFormData } from './context/PergoladoContext';
 import type { CoberturaRetratilFormData } from './context/CoberturaRetratilContext';
+import type { PortaFormData } from './context/PortaContext';
 import type { ClienteFormData } from './screens/ClienteScreen';
 
-export type Screen = 'home' | 'cobertura' | 'pergolado' | 'cobertura_retratil' | 'cliente' | 'confirmacao';
+export type Screen = 'home' | 'cobertura' | 'pergolado' | 'cobertura_retratil' | 'porta' | 'cliente' | 'confirmacao';
 
-export type TipoOrcamento = 'cobertura' | 'pergolado' | 'cobertura_retratil';
+export type TipoOrcamento = 'cobertura' | 'pergolado' | 'cobertura_retratil' | 'porta';
 
 const NOME_ORCAMENTO_COBERTURA = 'Cobertura Premium';
 const NOME_ORCAMENTO_PERGOLADO = 'Pergolado';
 const NOME_ORCAMENTO_COBERTURA_RETRATIL = 'Cobertura Retrátil';
+const NOME_ORCAMENTO_PORTA = 'Porta';
 
 function AppContent() {
   const [screen, setScreen] = useState<Screen>('home');
   const [tipoOrcamento, setTipoOrcamento] = useState<TipoOrcamento | null>(null);
   const [confirmacaoData, setConfirmacaoData] = useState<
-    CoberturaFormData | PergoladoFormData | CoberturaRetratilFormData | null
+    CoberturaFormData | PergoladoFormData | CoberturaRetratilFormData | PortaFormData | null
   >(null);
   const [clienteData, setClienteData] = useState<ClienteFormData | null>(null);
   const { reset: resetCobertura } = useCobertura();
   const { reset: resetPergolado } = usePergolado();
   const { reset: resetCoberturaRetratil } = useCoberturaRetratil();
+  const { reset: resetPorta } = usePorta();
 
   const goHome = () => {
     setScreen('home');
@@ -58,8 +63,14 @@ function AppContent() {
     setScreen('cobertura_retratil');
   };
 
+  const goToPorta = () => {
+    resetPorta();
+    setTipoOrcamento('porta');
+    setScreen('porta');
+  };
+
   const goToCliente = (
-    data: CoberturaFormData | PergoladoFormData | CoberturaRetratilFormData
+    data: CoberturaFormData | PergoladoFormData | CoberturaRetratilFormData | PortaFormData
   ) => {
     setConfirmacaoData(data);
     setScreen('cliente');
@@ -75,11 +86,14 @@ function AppContent() {
       ? NOME_ORCAMENTO_PERGOLADO
       : tipoOrcamento === 'cobertura_retratil'
         ? NOME_ORCAMENTO_COBERTURA_RETRATIL
-        : NOME_ORCAMENTO_COBERTURA;
+        : tipoOrcamento === 'porta'
+          ? NOME_ORCAMENTO_PORTA
+          : NOME_ORCAMENTO_COBERTURA;
 
   const backFromCliente = () => {
     if (tipoOrcamento === 'pergolado') setScreen('pergolado');
     else if (tipoOrcamento === 'cobertura_retratil') setScreen('cobertura_retratil');
+    else if (tipoOrcamento === 'porta') setScreen('porta');
     else setScreen('cobertura');
   };
 
@@ -91,10 +105,11 @@ function AppContent() {
       <div className="flex-1 min-h-0 overflow-y-auto">
         {screen === 'home' && (
           <HomeScreen
-          onCoberturaPremium={goToCobertura}
-          onPergolado={goToPergolado}
-          onCoberturaRetratil={goToCoberturaRetratil}
-        />
+            onCoberturaPremium={goToCobertura}
+            onPergolado={goToPergolado}
+            onCoberturaRetratil={goToCoberturaRetratil}
+            onPorta={goToPorta}
+          />
         )}
         {screen === 'cobertura' && (
           <CoberturaPremiumScreen onBack={goHome} onConfirm={(d) => goToCliente(d)} />
@@ -104,6 +119,9 @@ function AppContent() {
         )}
         {screen === 'cobertura_retratil' && (
           <CoberturaRetratilScreen onBack={goHome} onConfirm={(d) => goToCliente(d)} />
+        )}
+        {screen === 'porta' && (
+          <PortaScreen onBack={goHome} onConfirm={(d) => goToCliente(d)} />
         )}
         {screen === 'cliente' && (
           <ClienteScreen
@@ -133,7 +151,9 @@ function App() {
     <CoberturaProvider>
       <PergoladoProvider>
         <CoberturaRetratilProvider>
-          <AppContent />
+          <PortaProvider>
+            <AppContent />
+          </PortaProvider>
         </CoberturaRetratilProvider>
       </PergoladoProvider>
     </CoberturaProvider>

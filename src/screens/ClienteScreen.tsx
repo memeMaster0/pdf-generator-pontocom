@@ -62,7 +62,7 @@ export function ClienteScreen({ nomeOrcamento, onBack, onConfirm }: ClienteScree
   };
 
   return (
-    <div className="min-h-full flex flex-col px-6 py-8 max-w-2xl mx-auto">
+    <div className="min-h-full flex flex-col px-6 py-8 max-w-5xl mx-auto w-full">
       <button
         type="button"
         onClick={onBack}

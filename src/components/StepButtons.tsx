@@ -16,7 +16,7 @@ export function StepButtons<T extends string>({
   selectedClassName = 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] text-[var(--color-accent)]',
 }: StepButtonsProps<T>) {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap gap-3 w-fit">
       {options.map((opt) => {
         const isSelected = value === opt.value;
         return (

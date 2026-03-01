@@ -3,7 +3,7 @@ import { useCobertura } from '../context/CoberturaContext';
 import type { CoberturaFormData } from '../context/CoberturaContext';
 import { StepButtons } from '../components/StepButtons';
 import { CurrencyInput } from '../components/CurrencyInput';
-import { MedidasInput, validateMedidas } from '../components/MedidasInput';
+import { MedidasInput, validateMedidas, validateM2Direto } from '../components/MedidasInput';
 
 interface CoberturaPremiumScreenProps {
   onBack: () => void;
@@ -27,6 +27,8 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
     medidas,
     medidas1,
     medidas2,
+    medidas3,
+    m2Direto,
     valorM2,
     valorPilar,
     medidaPilar,
@@ -40,10 +42,14 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
     setMedidas,
     setMedidas1,
     setMedidas2,
+    setMedidas3,
+    setM2Direto,
     setValorM2,
     setValorPilar,
     setMedidaPilar,
     setCustoDeslocamento,
+    descricaoAdicional,
+    setDescricaoAdicional,
     canShowForm,
     buildFormData,
     formTouched,
@@ -69,7 +75,11 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
     const okMedidas =
       tipoMedidas === 'area_unica'
         ? validateMedidas(medidas)
-        : validateMedidas(medidas1) && validateMedidas(medidas2);
+        : tipoMedidas === 'duas_areas'
+          ? validateMedidas(medidas1) && validateMedidas(medidas2)
+          : tipoMedidas === 'tres_areas'
+            ? validateMedidas(medidas1) && validateMedidas(medidas2) && validateMedidas(medidas3)
+            : validateM2Direto(m2Direto);
     const okValorM2 = valorM2.length > 0 && parseInt(valorM2, 10) > 0;
     const okPilar = step2 !== 'Sim' || (valorPilar.length > 0 && parseInt(valorPilar, 10) >= 0);
     const okMedidaPilar = step2 !== 'Sim' || medidaPilar.trim().length > 0;
@@ -81,8 +91,16 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
     if (data) onConfirm(data);
   };
 
+  const okMedidasSubmit =
+    tipoMedidas === 'area_unica'
+      ? validateMedidas(medidas)
+      : tipoMedidas === 'duas_areas'
+        ? validateMedidas(medidas1) && validateMedidas(medidas2)
+        : tipoMedidas === 'tres_areas'
+          ? validateMedidas(medidas1) && validateMedidas(medidas2) && validateMedidas(medidas3)
+          : validateM2Direto(m2Direto);
   const canSubmitForm =
-    (tipoMedidas === 'area_unica' ? validateMedidas(medidas) : validateMedidas(medidas1) && validateMedidas(medidas2)) &&
+    okMedidasSubmit &&
     valorM2.length > 0 &&
     parseInt(valorM2, 10) > 0 &&
     (step2 !== 'Sim' || (valorPilar.length > 0 && parseInt(valorPilar, 10) >= 0)) &&
@@ -91,7 +109,7 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
     parseInt(custoDeslocamento, 10) >= 0;
 
   return (
-    <div className="min-h-full flex flex-col px-6 py-8 max-w-2xl mx-auto">
+    <div className="min-h-full flex flex-col px-6 py-8 max-w-5xl mx-auto w-full">
       <button
         type="button"
         onClick={onBack}
@@ -139,7 +157,7 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
       <div className="mb-8">
         <p className="text-sm font-medium text-white mb-3">3. Cor / Pintura</p>
         {isChapa ? (
-          <div className="py-3 px-5 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]">
+          <div className="py-3 px-0 text-[var(--color-text-muted)]" aria-hidden>
             Pintura Automotiva Premium
           </div>
         ) : (
@@ -191,13 +209,15 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
               options={[
                 { value: 'area_unica', label: 'Área única' },
                 { value: 'duas_areas', label: 'Duas áreas' },
+                { value: 'tres_areas', label: 'Três áreas' },
+                { value: 'm2_direto', label: 'Informar m² direto' },
               ]}
               value={tipoMedidas}
               onChange={(v) => setTipoMedidas(v as typeof tipoMedidas)}
             />
           </div>
 
-          {tipoMedidas === 'area_unica' ? (
+          {tipoMedidas === 'area_unica' && (
             <MedidasInput
               id="medidas"
               label="Medidas da cobertura"
@@ -207,7 +227,8 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
               hint="5,00m x 2,00m"
               error={undefined}
             />
-          ) : (
+          )}
+          {tipoMedidas === 'duas_areas' && (
             <>
               <MedidasInput
                 id="medidas1"
@@ -228,6 +249,58 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
                 error={undefined}
               />
             </>
+          )}
+          {tipoMedidas === 'tres_areas' && (
+            <>
+              <MedidasInput
+                id="medidas1"
+                label="Área 1 (medidas)"
+                value={medidas1}
+                onChange={setMedidas1}
+                placeholder="5,00m x 2,00m"
+                hint="5,00m x 2,00m"
+                error={undefined}
+              />
+              <MedidasInput
+                id="medidas2"
+                label="Área 2 (medidas)"
+                value={medidas2}
+                onChange={setMedidas2}
+                placeholder="3,00m x 4,00m"
+                hint="3,00m x 4,00m"
+                error={undefined}
+              />
+              <MedidasInput
+                id="medidas3"
+                label="Área 3 (medidas)"
+                value={medidas3}
+                onChange={setMedidas3}
+                placeholder="2,00m x 2,00m"
+                hint="2,00m x 2,00m"
+                error={undefined}
+              />
+            </>
+          )}
+          {tipoMedidas === 'm2_direto' && (
+            <div>
+              <label htmlFor="m2-direto" className="block text-sm font-medium text-white mb-2">
+                Área total (m²)
+              </label>
+              <input
+                id="m2-direto"
+                type="text"
+                inputMode="decimal"
+                value={m2Direto}
+                onChange={(e) => setM2Direto(e.target.value)}
+                placeholder="25,50"
+                className="w-full max-w-[200px] py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+                aria-invalid={formTouched && !validateM2Direto(m2Direto)}
+              />
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">Ex.: 25,50</p>
+              {formTouched && !validateM2Direto(m2Direto) && m2Direto.trim() !== '' && (
+                <p className="mt-1 text-xs text-amber-400">Informe um valor de m² válido (ex.: 25,50)</p>
+              )}
+            </div>
           )}
 
           <CurrencyInput
@@ -259,7 +332,7 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
                   value={medidaPilar}
                   onChange={(e) => setMedidaPilar(e.target.value)}
                   placeholder="ex: 100x100"
-                  className="w-full py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+                  className="w-full max-w-[200px] py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
                   aria-invalid={formTouched && !medidaPilar.trim()}
                   aria-describedby={formTouched && !medidaPilar.trim() ? 'medida-pilar-error' : undefined}
                 />
@@ -289,6 +362,26 @@ export function CoberturaPremiumScreen({ onBack, onConfirm }: CoberturaPremiumSc
               </button>
             }
           />
+
+          <div>
+            <label
+              htmlFor="descricao-adicional"
+              className="block text-sm font-medium text-white mb-2"
+            >
+              Descrição Adicional (Opcional)
+            </label>
+            <textarea
+              id="descricao-adicional"
+              value={descricaoAdicional}
+              onChange={(e) => setDescricaoAdicional(e.target.value)}
+              placeholder="Ex.: Incluir iluminação LED na estrutura"
+              rows={3}
+              className="w-full py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent resize-y min-h-[80px]"
+            />
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+              O texto informado aqui será exibido exatamente como digitado na planilha do orçamento (célula D44).
+            </p>
+          </div>
 
           <button
             type="button"

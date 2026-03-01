@@ -82,6 +82,17 @@ FIELD_PLACEHOLDER_REPLACE_COBERTURA_RETRATIL = {
     "[Valor p/ Forma de Pagamento]": "valorFormaPagamento",
 }
 
+# Placeholders para a planilha Porta (dados do cliente e valor; descrição montada em código em D43)
+FIELD_PLACEHOLDER_REPLACE_PORTA = {
+    "[Nome do Cliente]": "nomeCliente",
+    "[CPF/CPNJ]": "cpfCnpj",
+    "[Endereço]": "endereco",
+    "[Celular/Fone]": "celularFone",
+    "[Data Atual]": "dataAtual",
+    "[Cidade]": "cidade",
+    "[Valor p/ Forma de Pagamento]": "valorFormaPagamento",
+}
+
 # Campos que recebem o valor parcelado em 10x (total + 10%); todas as células com esse texto são preenchidas
 FIELD_TOTAL_LABEL = "[Valor Total]"
 # Cobertura Retrátil: valor total geral (cobertura + automatização) à vista
@@ -201,6 +212,61 @@ def build_texto_especificacao_d43_retratil(data: dict) -> str:
     return texto
 
 
+def build_texto_especificacao_d43_porta(data: dict) -> str:
+    """
+    Monta o texto de especificação D43 para Porta.
+    Todos os valores na descrição em minúsculas.
+    Linhas condicionais: Bandeirola e Alizar só se selecionados.
+    Para Ferro Forjado e Aço Corten, o trecho [Acondicionamento] é omitido da linha da porta.
+    """
+    def _(s: str) -> str:
+        return (s or "").strip().lower()
+
+    modelo = _(data.get("modeloPorta") or "")
+    modo_puxador = _(data.get("modoPuxador") or "")
+    medidas_geral = (data.get("medidasPortaGeral") or "").strip()
+    medidas_porta = (data.get("medidasPorta") or "").strip()
+    sistema = _(data.get("sistemaAbertura") or "")
+    estilo = _(data.get("estiloFolha") or "")
+    acond = (data.get("acondicionamentoEfetivo") or "").strip().lower()
+    espessura = (data.get("espessuraChapa") or "").strip().lower()
+    pintura = (data.get("corPintura") or "").strip().lower()
+    modo_entrega = _(data.get("modoEntrega") or "")
+
+    # Linha 1: Porta [Modelo], [Modo Puxador], [Medidas da Porta Geral].
+    linha1 = f"Porta {modelo}, {modo_puxador}, {medidas_geral}."
+
+    # Linha 2: Porta: [Medidas], [Sistema], [Estilo]. [Acondicionamento]. Fabricada em chapa [Espessura].
+    # Para Ferro Forjado e Aço Corten: sem [Acondicionamento].
+    modelo_raw = (data.get("modeloPorta") or "").strip()
+    sem_acondicionamento_na_linha = modelo_raw in ("Ferro Forjado", "Aço Corten")
+    if sem_acondicionamento_na_linha:
+        linha2 = f"Porta: {medidas_porta}, {sistema}, {estilo}. Fabricada em chapa {espessura}."
+    else:
+        parte_acond = f" {acond}." if acond else ""
+        linha2 = f"Porta: {medidas_porta}, {sistema}, {estilo}.{parte_acond} Fabricada em chapa {espessura}."
+
+    linhas = [linha1, "", linha2]
+
+    if data.get("bandeirola"):
+        med_band = (data.get("medidasBandeirola") or "").strip()
+        linhas.append("")
+        linhas.append(f"Bandeirola: {med_band}.")
+
+    if data.get("alizar"):
+        med_alizar = (data.get("medidaAlizar") or "").strip()
+        linhas.append("")
+        linhas.append(f"Alizar: {med_alizar}, em dobra especial.")
+
+    linhas.append("")
+    linhas.append(f"Acabamento: {pintura}, {modo_entrega}.")
+    linhas.append("")
+    linhas.append("Incluso: fechadura rolete ou maçaneta simples.")
+    linhas.append("Não incluso: vidro, puxadores especiais e fechadura eletrônica.")
+
+    return "\n".join(linhas)
+
+
 def format_currency(raw: str) -> str:
     """Converte dígitos (ex: '150000') em 'R$ 1.500,00'."""
     digits = "".join(c for c in (raw or "") if c.isdigit())
@@ -237,10 +303,23 @@ def parse_medidas_m2(medidas: str) -> float:
     return round(a * b, 2)
 
 
+def parse_m2_direto(value: str) -> float:
+    """Converte string de m² direto (ex: '25,50' ou '25.50') em float."""
+    s = (value or "").strip().replace(",", ".")
+    if not s:
+        return 0.0
+    try:
+        return round(float(s), 2)
+    except ValueError:
+        return 0.0
+
+
 def get_total_m2(data: dict) -> float:
     """
     Retorna a área total em m² a partir do payload.
-    - Se tipoMedidas == "duas_areas" e existirem medidas1 e medidas2: m²₁ + m²₂.
+    - duas_areas: m²₁ + m²₂.
+    - tres_areas: m²₁ + m²₂ + m²₃.
+    - m2_direto: valor informado diretamente (ex: "25,50").
     - Caso contrário (área única ou payload antigo): parse_medidas_m2(medidas).
     """
     if data.get("tipoMedidas") == "duas_areas":
@@ -248,6 +327,18 @@ def get_total_m2(data: dict) -> float:
         m2 = data.get("medidas2") or ""
         if m1 or m2:
             return round(parse_medidas_m2(m1) + parse_medidas_m2(m2), 2)
+    if data.get("tipoMedidas") == "tres_areas":
+        m1 = data.get("medidas1") or ""
+        m2 = data.get("medidas2") or ""
+        m3 = data.get("medidas3") or ""
+        if m1 or m2 or m3:
+            return round(
+                parse_medidas_m2(m1) + parse_medidas_m2(m2) + parse_medidas_m2(m3), 2
+            )
+    if data.get("tipoMedidas") == "m2_direto":
+        raw = (data.get("m2Direto") or "").strip()
+        if raw:
+            return parse_m2_direto(raw)
     return parse_medidas_m2(data.get("medidas") or "")
 
 
@@ -331,6 +422,31 @@ def get_valor_total_reais_cobertura_retratil(data: dict) -> float:
     valor_cobertura = get_valor_cobertura_retratil_reais(data)
     custo_abertura_reais = raw_to_reais(data.get("custoAberturaAutomatizada") or "")
     return round(valor_cobertura + custo_abertura_reais, 2)
+
+
+def get_m2_porta(data: dict) -> float:
+    """
+    m² para Porta: (alturaPorta + alturaBandeirola) × (larguraPorta + larguraBandeirola).
+    Valores vêm em metros (número). Se não houver bandeirola, usa só porta.
+    """
+    alt_porta = float(data.get("alturaPorta") or 0)
+    larg_porta = float(data.get("larguraPorta") or 0)
+    if data.get("bandeirola"):
+        alt_band = float(data.get("alturaBandeirola") or 0)
+        larg_band = float(data.get("larguraBandeirola") or 0)
+        return round((alt_porta + alt_band) * (larg_porta + larg_band), 2)
+    return round(alt_porta * larg_porta, 2)
+
+
+def get_valor_total_reais_porta(data: dict) -> float:
+    """
+    Valor total para Porta: m² × valor por m² + custo de deslocamento.
+    Valores no JSON: valorM2 e custoDeslocamento em centavos.
+    """
+    m2 = get_m2_porta(data)
+    valor_m2_reais = raw_to_reais(data.get("valorM2") or "")
+    custo_reais = raw_to_reais(data.get("custoDeslocamento") or "")
+    return round(m2 * valor_m2_reais + custo_reais, 2)
 
 
 def build_texto_forma_pagamento(
@@ -493,14 +609,33 @@ def main() -> int:
     _hoje = datetime.now()
     data["dataAtual"] = f"{_hoje.day:02d}/{_hoje.month:02d}/{_hoje.year}"
 
-    # Duas áreas: garantir "medidas" para placeholders/Excel se vier só medidas1 e medidas2
+    # Garantir "medidas" para placeholders/Excel conforme tipo de medição.
+    # Quando são dimensões (1, 2 ou 3 áreas), prefixar com "medidas "; m² direto fica "X,XX metros quadrados".
     if data.get("tipoMedidas") == "duas_areas":
         m1, m2 = (data.get("medidas1") or "").strip(), (data.get("medidas2") or "").strip()
         if m1 and m2 and not (data.get("medidas") or "").strip():
-            data["medidas"] = f"{m1} e {m2}"
+            data["medidas"] = f"medidas {m1} e {m2}"
+    elif data.get("tipoMedidas") == "tres_areas":
+        m1 = (data.get("medidas1") or "").strip()
+        m2 = (data.get("medidas2") or "").strip()
+        m3 = (data.get("medidas3") or "").strip()
+        if (m1 or m2 or m3) and not (data.get("medidas") or "").strip():
+            data["medidas"] = "medidas " + " e ".join(x for x in (m1, m2, m3) if x)
+    elif data.get("tipoMedidas") == "m2_direto":
+        raw = (data.get("m2Direto") or "").strip()
+        if raw:
+            valor_m2 = parse_m2_direto(raw)
+            # Formato brasileiro para planilha: "25,50 metros quadrados"
+            data["medidas"] = f"{valor_m2:.2f}".replace(".", ",") + " metros quadrados"
+    else:
+        # area_unica: prefixar com "medidas " o valor já vindo no payload
+        med = (data.get("medidas") or "").strip()
+        if med and not med.lower().startswith("medidas "):
+            data["medidas"] = f"medidas {med}"
 
     is_pergolado = data.get("tipoProposta") == "pergolado"
     is_cobertura_retratil = data.get("tipoProposta") == "cobertura_retratil"
+    is_porta = data.get("tipoProposta") == "porta"
     valor_cobertura_retratil_reais: float | None = None  # só usado para Cobertura Retrátil (base para juros e [Valor Total])
     if is_pergolado:
         total_a_vista_reais = get_valor_total_reais_pergolado(data)
@@ -511,6 +646,9 @@ def main() -> int:
         data["valorFormaPagamento"] = build_texto_forma_pagamento(
             valor_cobertura_retratil_reais, total_a_vista_reais
         )
+    elif is_porta:
+        total_a_vista_reais = get_valor_total_reais_porta(data)
+        data["valorFormaPagamento"] = build_texto_forma_pagamento(total_a_vista_reais)
     else:
         total_a_vista_reais = get_valor_total_reais(data)
         data["valorFormaPagamento"] = build_texto_forma_pagamento(total_a_vista_reais)
@@ -561,6 +699,8 @@ def main() -> int:
             placeholder_map = FIELD_PLACEHOLDER_REPLACE_PERGOLADO
         elif is_cobertura_retratil:
             placeholder_map = FIELD_PLACEHOLDER_REPLACE_COBERTURA_RETRATIL
+        elif is_porta:
+            placeholder_map = FIELD_PLACEHOLDER_REPLACE_PORTA
         else:
             placeholder_map = FIELD_PLACEHOLDER_REPLACE
         for placeholder_text, json_key in placeholder_map.items():
@@ -612,9 +752,12 @@ def main() -> int:
                 pass
             _log(f"  Preenchido: planilha '{sheet.name}', {address}")
 
-        # Cobertura Retrátil: preencher [Valor Total Geral] = cobertura + automatização (total à vista geral)
+        # Cobertura Retrátil: preencher [Valor Total Geral] = cobertura com juros 10% + valor da automatização
         if is_cobertura_retratil:
-            total_geral_str = format_currency(str(int(round(total_a_vista_reais * 100))))
+            cobertura_10x = valor_cobertura_retratil_reais * (1 + CARTAO_10X_ACRECIMO)
+            custo_abertura_reais = raw_to_reais(data.get("custoAberturaAutomatizada") or "")
+            total_geral_reais = round(cobertura_10x + custo_abertura_reais, 2)
+            total_geral_str = format_currency(str(int(round(total_geral_reais * 100))))
             total_geral_cells = find_all_cells_by_text(wb, FIELD_TOTAL_GERAL_LABEL)
             _log(f"Células com '{FIELD_TOTAL_GERAL_LABEL}': {len(total_geral_cells)} encontrada(s)")
             for sheet, address in total_geral_cells:
@@ -626,7 +769,7 @@ def main() -> int:
                     pass
                 _log(f"  Preenchido: planilha '{sheet.name}', {address}")
 
-        # Texto de especificação na célula D43 (Cobertura Premium ou Cobertura Retrátil; Pergolado não usa D43)
+        # Texto de especificação na célula D43 (Cobertura Premium, Cobertura Retrátil ou Porta; Pergolado não usa D43)
         if is_cobertura_retratil:
             texto_d43 = build_texto_especificacao_d43_retratil(data)
             texto_d43_excel = texto_d43.replace("\n", "\r\n")
@@ -655,6 +798,30 @@ def main() -> int:
                 except Exception:
                     pass
                 _log(f"Células {D44_CELL}, {M44_CELL}, {N44_CELL} preenchidas (modo Automatizada).")
+        elif is_porta:
+            texto_d43 = build_texto_especificacao_d43_porta(data)
+            texto_d43_excel = texto_d43.replace("\n", "\r\n")
+            sheet_d43 = wb.sheets[0]
+            cell_d43 = sheet_d43.range(D43_CELL)
+            cell_d43.value = texto_d43_excel
+            try:
+                cell_d43.api.WrapText = True
+            except Exception:
+                pass
+            # Negrito nos cabeçalhos da descrição Porta
+            try:
+                # Primeira linha: "Porta [modelo]" (até a primeira vírgula)
+                idx_comma = texto_d43_excel.find(",")
+                if idx_comma >= 0:
+                    cell_d43.characters[0:idx_comma].font.bold = True
+                for cabecalho in ("Porta:", "Bandeirola:", "Alizar:", "Acabamento:", "Incluso:", "Não incluso:"):
+                    pos = texto_d43_excel.find(cabecalho)
+                    if pos >= 0:
+                        cell_d43.characters[pos : pos + len(cabecalho)].font.bold = True
+                _log("Negrito aplicado aos cabeçalhos da descrição Porta na célula D43.")
+            except Exception as fmt_err:
+                _log(f"Negrito D43 Porta não aplicado (ignorado): {fmt_err}")
+            _log(f"Célula {D43_CELL} preenchida com texto de especificação Porta (planilha '{sheet_d43.name}').")
         elif not is_pergolado:
             texto_d43 = build_texto_especificacao_d43(data)
             texto_d43_excel = texto_d43.replace("\n", "\r\n")
@@ -674,6 +841,18 @@ def main() -> int:
             except Exception as fmt_err:
                 _log(f"Negrito D43 não aplicado (ignorado): {fmt_err}")
             _log(f"Célula {D43_CELL} preenchida com texto de especificação (planilha '{sheet_d43.name}').")
+
+        # Descrição adicional opcional na célula D44 (Pergolado e Cobertura Premium; Cobertura Retrátil usa D44 para automatizador)
+        if not is_cobertura_retratil:
+            desc_adicional = (data.get("descricaoAdicional") or "").strip()
+            if desc_adicional:
+                sheet_d44 = wb.sheets[0]
+                sheet_d44.range(D44_CELL).value = desc_adicional.replace("\n", "\r\n")
+                try:
+                    sheet_d44.range(D44_CELL).api.WrapText = True
+                except Exception:
+                    pass
+                _log(f"Célula {D44_CELL} preenchida com descrição adicional (planilha '{sheet_d44.name}').")
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         pdf_path = os.path.abspath(str(output_path.resolve()))

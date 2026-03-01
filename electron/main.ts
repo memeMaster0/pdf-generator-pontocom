@@ -21,10 +21,10 @@ function createWindow(): void {
   const iconOption = fs.existsSync(iconPath) ? { icon: iconPath } : {};
 
   const mainWindow = new BrowserWindow({
-    width: 960,
-    height: 700,
-    minWidth: 800,
-    minHeight: 600,
+    width: 1120,
+    height: 820,
+    minWidth: 900,
+    minHeight: 650,
     frame: false,
     ...iconOption,
     webPreferences: {
@@ -51,11 +51,14 @@ function createWindow(): void {
       : appPath;
     const isPergolado = data.tipoProposta === 'pergolado';
     const isCoberturaRetratil = data.tipoProposta === 'cobertura_retratil';
+    const isPorta = data.tipoProposta === 'porta';
     const templateFileName = isPergolado
       ? 'PROPOSTA  - PERGOLADO.xlsx'
       : isCoberturaRetratil
         ? 'PROPOSTA  - COBERTURA RETRÁTIL.xlsx'
-        : 'PROPOSTA  - COBERTURA PREMIUM.xlsx';
+        : isPorta
+          ? 'PROPOSTA  - PORTA.xlsx'
+          : 'PROPOSTA  - COBERTURA PREMIUM.xlsx';
     const templatePath = app.isPackaged
       ? path.join(installResourcesPath, 'resources', templateFileName)
       : path.join(appPath, 'resources', templateFileName);
@@ -70,7 +73,9 @@ function createWindow(): void {
       ? 'Pergolado'
       : isCoberturaRetratil
         ? 'Cobertura Retrátil'
-        : 'Cobertura Premium';
+        : isPorta
+          ? 'Porta'
+          : 'Cobertura Premium';
     const nomeCliente = (data.nomeCliente as string) || '';
     const palavras = nomeCliente.trim().split(/\s+/).filter(Boolean);
     const nomeParaArquivo = palavras.length > 3 ? palavras.slice(0, 2).join(' ') : nomeCliente.trim();

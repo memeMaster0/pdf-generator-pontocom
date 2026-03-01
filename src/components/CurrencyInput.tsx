@@ -60,7 +60,7 @@ export function CurrencyInput({
         {label}
       </label>
       <div className="flex gap-2 items-stretch">
-        <div className="flex-1 min-w-0 flex items-center rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] focus-within:border-[var(--color-accent)] focus-within:ring-2 focus-within:ring-[var(--color-accent)] focus-within:ring-opacity-30 transition-all">
+        <div className="flex-1 min-w-0 max-w-[200px] flex items-center rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] focus-within:border-[var(--color-accent)] focus-within:ring-2 focus-within:ring-[var(--color-accent)] focus-within:ring-opacity-30 transition-all">
           <span className="pl-4 text-[var(--color-text-muted)] font-medium">R$</span>
           <input
             ref={inputRef}

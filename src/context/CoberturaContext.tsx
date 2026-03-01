@@ -11,7 +11,7 @@ export type TemPilar = 'Sim' | 'Não' | null;
 export type CorACM = 'Preto' | 'Branco' | 'Cinza';
 export type TelhaTermica = '30mm' | '50mm' | null;
 export type ForroPvc = 'Tradicional' | 'Vinílico' | null;
-export type TipoMedidas = 'area_unica' | 'duas_areas';
+export type TipoMedidas = 'area_unica' | 'duas_areas' | 'tres_areas' | 'm2_direto';
 
 export interface CoberturaFormData {
   tipoCobertura: 'ACM' | 'Chapa Metálica';
@@ -23,10 +23,13 @@ export interface CoberturaFormData {
   medidas: string;
   medidas1?: string;
   medidas2?: string;
+  medidas3?: string;
+  m2Direto?: string;
   valorM2: string;
   valorPilar: string | null;
   medidaPilar: string | null;
   custoDeslocamento: string;
+  descricaoAdicional?: string;
 }
 
 interface CoberturaState {
@@ -39,10 +42,13 @@ interface CoberturaState {
   medidas: string;
   medidas1: string;
   medidas2: string;
+  medidas3: string;
+  m2Direto: string;
   valorM2: string;
   valorPilar: string;
   medidaPilar: string;
   custoDeslocamento: string;
+  descricaoAdicional: string;
   formTouched: boolean;
 }
 
@@ -56,10 +62,13 @@ type CoberturaAction =
   | { type: 'SET_MEDIDAS'; payload: string }
   | { type: 'SET_MEDIDAS1'; payload: string }
   | { type: 'SET_MEDIDAS2'; payload: string }
+  | { type: 'SET_MEDIDAS3'; payload: string }
+  | { type: 'SET_M2_DIRETO'; payload: string }
   | { type: 'SET_VALOR_M2'; payload: string }
   | { type: 'SET_VALOR_PILAR'; payload: string }
   | { type: 'SET_MEDIDA_PILAR'; payload: string }
   | { type: 'SET_CUSTO_DESLOCAMENTO'; payload: string }
+  | { type: 'SET_DESCRICAO_ADICIONAL'; payload: string }
   | { type: 'SET_FORM_TOUCHED'; payload: boolean }
   | { type: 'RESET' };
 
@@ -73,10 +82,13 @@ const initialState: CoberturaState = {
   medidas: '',
   medidas1: '',
   medidas2: '',
+  medidas3: '',
+  m2Direto: '',
   valorM2: '',
   valorPilar: '',
   medidaPilar: '',
   custoDeslocamento: '',
+  descricaoAdicional: '',
   formTouched: false,
 };
 
@@ -113,6 +125,10 @@ function coberturaReducer(state: CoberturaState, action: CoberturaAction): Cober
       return { ...state, medidas1: action.payload };
     case 'SET_MEDIDAS2':
       return { ...state, medidas2: action.payload };
+    case 'SET_MEDIDAS3':
+      return { ...state, medidas3: action.payload };
+    case 'SET_M2_DIRETO':
+      return { ...state, m2Direto: action.payload };
     case 'SET_VALOR_M2':
       return { ...state, valorM2: action.payload };
     case 'SET_VALOR_PILAR':
@@ -121,6 +137,8 @@ function coberturaReducer(state: CoberturaState, action: CoberturaAction): Cober
       return { ...state, medidaPilar: action.payload };
     case 'SET_CUSTO_DESLOCAMENTO':
       return { ...state, custoDeslocamento: action.payload };
+    case 'SET_DESCRICAO_ADICIONAL':
+      return { ...state, descricaoAdicional: action.payload };
     case 'SET_FORM_TOUCHED':
       return { ...state, formTouched: action.payload };
     case 'RESET':
@@ -140,10 +158,13 @@ interface CoberturaContextValue extends CoberturaState {
   setMedidas: (v: string) => void;
   setMedidas1: (v: string) => void;
   setMedidas2: (v: string) => void;
+  setMedidas3: (v: string) => void;
+  setM2Direto: (v: string) => void;
   setValorM2: (v: string) => void;
   setValorPilar: (v: string) => void;
   setMedidaPilar: (v: string) => void;
   setCustoDeslocamento: (v: string) => void;
+  setDescricaoAdicional: (v: string) => void;
   setFormTouched: (v: boolean) => void;
   reset: () => void;
   canShowForm: boolean;
@@ -182,6 +203,12 @@ export function CoberturaProvider({ children }: { children: ReactNode }) {
   const setMedidas2 = useCallback((payload: string) => {
     dispatch({ type: 'SET_MEDIDAS2', payload });
   }, []);
+  const setMedidas3 = useCallback((payload: string) => {
+    dispatch({ type: 'SET_MEDIDAS3', payload });
+  }, []);
+  const setM2Direto = useCallback((payload: string) => {
+    dispatch({ type: 'SET_M2_DIRETO', payload });
+  }, []);
   const setValorM2 = useCallback((payload: string) => {
     dispatch({ type: 'SET_VALOR_M2', payload });
   }, []);
@@ -193,6 +220,9 @@ export function CoberturaProvider({ children }: { children: ReactNode }) {
   }, []);
   const setCustoDeslocamento = useCallback((payload: string) => {
     dispatch({ type: 'SET_CUSTO_DESLOCAMENTO', payload });
+  }, []);
+  const setDescricaoAdicional = useCallback((payload: string) => {
+    dispatch({ type: 'SET_DESCRICAO_ADICIONAL', payload });
   }, []);
   const setFormTouched = useCallback((payload: boolean) => {
     dispatch({ type: 'SET_FORM_TOUCHED', payload });
@@ -213,8 +243,24 @@ export function CoberturaProvider({ children }: { children: ReactNode }) {
         medidas2: state.medidas2,
       };
     }
+    if (state.tipoMedidas === 'tres_areas') {
+      return {
+        tipoMedidas: 'tres_areas' as const,
+        medidas: [state.medidas1, state.medidas2, state.medidas3].filter(Boolean).join(' e '),
+        medidas1: state.medidas1,
+        medidas2: state.medidas2,
+        medidas3: state.medidas3,
+      };
+    }
+    if (state.tipoMedidas === 'm2_direto') {
+      return {
+        tipoMedidas: 'm2_direto' as const,
+        medidas: '',
+        m2Direto: state.m2Direto.trim(),
+      };
+    }
     return { tipoMedidas: 'area_unica' as const, medidas: state.medidas };
-  }, [state.tipoMedidas, state.medidas, state.medidas1, state.medidas2]);
+  }, [state.tipoMedidas, state.medidas, state.medidas1, state.medidas2, state.medidas3, state.m2Direto]);
 
   const buildFormData = useCallback((): CoberturaFormData | null => {
     if (!state.step1 || !state.step2 || !state.step3 || !state.step4 || !state.step5) return null;
@@ -229,6 +275,7 @@ export function CoberturaProvider({ children }: { children: ReactNode }) {
       valorPilar: state.step2 === 'Sim' ? state.valorPilar : null,
       medidaPilar: state.step2 === 'Sim' ? (state.medidaPilar || null) : null,
       custoDeslocamento: state.custoDeslocamento,
+      ...(state.descricaoAdicional.trim() ? { descricaoAdicional: state.descricaoAdicional.trim() } : {}),
     };
   }, [state, buildMedidasPayload]);
 
@@ -243,10 +290,13 @@ export function CoberturaProvider({ children }: { children: ReactNode }) {
     setMedidas,
     setMedidas1,
     setMedidas2,
+    setMedidas3,
+    setM2Direto,
     setValorM2,
     setValorPilar,
     setMedidaPilar,
     setCustoDeslocamento,
+    setDescricaoAdicional,
     setFormTouched,
     reset,
     canShowForm,

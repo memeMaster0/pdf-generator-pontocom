@@ -2,12 +2,14 @@ interface HomeScreenProps {
   onCoberturaPremium: () => void;
   onPergolado: () => void;
   onCoberturaRetratil: () => void;
+  onPorta: () => void;
 }
 
 export function HomeScreen({
   onCoberturaPremium,
   onPergolado,
   onCoberturaRetratil,
+  onPorta,
 }: HomeScreenProps) {
   return (
     <div className="min-h-full flex flex-col items-center justify-center px-8 py-12">
@@ -45,8 +47,8 @@ export function HomeScreen({
 
         <button
           type="button"
-          disabled
-          className="w-full py-4 px-6 rounded-[var(--radius-lg)] bg-[var(--color-surface)] border border-[var(--color-border)] text-left font-medium text-[var(--color-text-muted)] cursor-not-allowed opacity-70"
+          onClick={onPorta}
+          className="w-full py-4 px-6 rounded-[var(--radius-lg)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border)] text-left font-medium text-white transition-all duration-200 hover:border-[var(--color-accent)] hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg)]"
         >
           Porta
         </button>

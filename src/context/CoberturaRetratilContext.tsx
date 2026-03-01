@@ -16,7 +16,7 @@ export type CorParteInferior = 'Amadeirado' | 'Branco' | 'Preto' | null;
 export type CorEstrutura = 'Preto' | 'Branca' | 'Outra' | null;
 export type ModoAbertura = 'Manual' | 'Automatizada' | null;
 export type QuantidadeMotores = '1 Motor' | '2 Motores' | null;
-export type TipoMedidas = 'area_unica' | 'duas_areas';
+export type TipoMedidas = 'area_unica' | 'duas_areas' | 'tres_areas' | 'm2_direto';
 
 /** Valor fixo por m² em centavos: Telha Térmica ou Compacto 3mm = R$ 1.200,00; Alveolar 6mm = R$ 800,00 */
 export const VALOR_M2_FIXO_CENTAVOS: Record<
@@ -40,6 +40,8 @@ export interface CoberturaRetratilFormData {
   medidas: string;
   medidas1?: string;
   medidas2?: string;
+  medidas3?: string;
+  m2Direto?: string;
   valorM2: string;
   custoAberturaAutomatizada: string;
   custoDeslocamento: string;
@@ -57,6 +59,8 @@ interface CoberturaRetratilState {
   medidas: string;
   medidas1: string;
   medidas2: string;
+  medidas3: string;
+  m2Direto: string;
   valorM2: string;
   valorM2Locked: boolean;
   custoAberturaAutomatizada: string;
@@ -76,6 +80,8 @@ type CoberturaRetratilAction =
   | { type: 'SET_MEDIDAS'; payload: string }
   | { type: 'SET_MEDIDAS1'; payload: string }
   | { type: 'SET_MEDIDAS2'; payload: string }
+  | { type: 'SET_MEDIDAS3'; payload: string }
+  | { type: 'SET_M2_DIRETO'; payload: string }
   | { type: 'SET_VALOR_M2'; payload: string }
   | { type: 'SET_VALOR_M2_LOCKED'; payload: boolean }
   | { type: 'SET_CUSTO_ABERTURA_AUTOMATIZADA'; payload: string }
@@ -95,6 +101,8 @@ const initialState: CoberturaRetratilState = {
   medidas: '',
   medidas1: '',
   medidas2: '',
+  medidas3: '',
+  m2Direto: '',
   valorM2: '',
   valorM2Locked: true,
   custoAberturaAutomatizada: '',
@@ -142,6 +150,10 @@ function coberturaRetratilReducer(
       return { ...state, medidas1: action.payload };
     case 'SET_MEDIDAS2':
       return { ...state, medidas2: action.payload };
+    case 'SET_MEDIDAS3':
+      return { ...state, medidas3: action.payload };
+    case 'SET_M2_DIRETO':
+      return { ...state, m2Direto: action.payload };
     case 'SET_VALOR_M2':
       return { ...state, valorM2: action.payload };
     case 'SET_VALOR_M2_LOCKED':
@@ -171,6 +183,8 @@ interface CoberturaRetratilContextValue extends CoberturaRetratilState {
   setMedidas: (v: string) => void;
   setMedidas1: (v: string) => void;
   setMedidas2: (v: string) => void;
+  setMedidas3: (v: string) => void;
+  setM2Direto: (v: string) => void;
   setValorM2: (v: string) => void;
   setValorM2Locked: (v: boolean) => void;
   setCustoAberturaAutomatizada: (v: string) => void;
@@ -219,6 +233,12 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
   const setMedidas2 = useCallback((payload: string) => {
     dispatch({ type: 'SET_MEDIDAS2', payload });
   }, []);
+  const setMedidas3 = useCallback((payload: string) => {
+    dispatch({ type: 'SET_MEDIDAS3', payload });
+  }, []);
+  const setM2Direto = useCallback((payload: string) => {
+    dispatch({ type: 'SET_M2_DIRETO', payload });
+  }, []);
   const setValorM2 = useCallback((payload: string) => {
     dispatch({ type: 'SET_VALOR_M2', payload });
   }, []);
@@ -263,8 +283,24 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
         medidas2: state.medidas2,
       };
     }
+    if (state.tipoMedidas === 'tres_areas') {
+      return {
+        tipoMedidas: 'tres_areas' as const,
+        medidas: [state.medidas1, state.medidas2, state.medidas3].filter(Boolean).join(' e '),
+        medidas1: state.medidas1,
+        medidas2: state.medidas2,
+        medidas3: state.medidas3,
+      };
+    }
+    if (state.tipoMedidas === 'm2_direto') {
+      return {
+        tipoMedidas: 'm2_direto' as const,
+        medidas: '',
+        m2Direto: state.m2Direto.trim(),
+      };
+    }
     return { tipoMedidas: 'area_unica' as const, medidas: state.medidas };
-  }, [state.tipoMedidas, state.medidas, state.medidas1, state.medidas2]);
+  }, [state.tipoMedidas, state.medidas, state.medidas1, state.medidas2, state.medidas3, state.m2Direto]);
 
   const buildFormData = useCallback((): CoberturaRetratilFormData | null => {
     if (!state.step1 || !state.step5) return null;
@@ -326,6 +362,8 @@ export function CoberturaRetratilProvider({ children }: { children: ReactNode })
     setMedidas,
     setMedidas1,
     setMedidas2,
+    setMedidas3,
+    setM2Direto,
     setValorM2,
     setValorM2Locked,
     setCustoAberturaAutomatizada,

@@ -1,8 +1,8 @@
 import { usePergolado } from '../context/PergoladoContext';
 import type { PergoladoFormData } from '../context/PergoladoContext';
 import { StepButtons } from '../components/StepButtons';
-import { CurrencyInput } from '../components/CurrencyInput';
-import { MedidasInput, validateMedidas } from '../components/MedidasInput';
+import { CurrencyInput, formatCurrencyDisplay } from '../components/CurrencyInput';
+import { MedidasInput, validateMedidas, validateM2Direto } from '../components/MedidasInput';
 
 interface PergoladoScreenProps {
   onBack: () => void;
@@ -25,9 +25,12 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
     medidas,
     medidas1,
     medidas2,
+    medidas3,
+    m2Direto,
     dimensaoTubo,
     dimensaoTuboManual,
     valorM2,
+    valorM2Locked,
     custoDeslocamento,
     setTipoPolicarbonato,
     setCorPolicarbonato,
@@ -35,10 +38,15 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
     setMedidas,
     setMedidas1,
     setMedidas2,
+    setMedidas3,
+    setM2Direto,
     setDimensaoTubo,
     setDimensaoTuboManual,
     setValorM2,
+    setValorM2Locked,
     setCustoDeslocamento,
+    descricaoAdicional,
+    setDescricaoAdicional,
     canShowForm,
     formTouched,
     setFormTouched,
@@ -54,26 +62,41 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
     const okMedidas =
       tipoMedidas === 'area_unica'
         ? validateMedidas(medidas)
-        : validateMedidas(medidas1) && validateMedidas(medidas2);
+        : tipoMedidas === 'duas_areas'
+          ? validateMedidas(medidas1) && validateMedidas(medidas2)
+          : tipoMedidas === 'tres_areas'
+            ? validateMedidas(medidas1) && validateMedidas(medidas2) && validateMedidas(medidas3)
+            : validateM2Direto(m2Direto);
+    const okValorM2 = valorM2.length > 0 && parseInt(valorM2, 10) > 0;
     const okManual =
-      !isManual || (dimensaoTuboManual.trim().length > 0 && valorM2.length > 0 && parseInt(valorM2, 10) > 0);
+      !isManual || (dimensaoTuboManual.trim().length > 0 && okValorM2);
     const okDeslocamento =
       custoDeslocamento.length > 0 && parseInt(custoDeslocamento, 10) >= 0;
 
-    if (!okMedidas || !okManual || !okDeslocamento) return;
+    if (!okMedidas || !okValorM2 || !okManual || !okDeslocamento) return;
 
     const data = buildFormData();
     if (data) onConfirm(data);
   };
 
+  const okMedidasSubmit =
+    tipoMedidas === 'area_unica'
+      ? validateMedidas(medidas)
+      : tipoMedidas === 'duas_areas'
+        ? validateMedidas(medidas1) && validateMedidas(medidas2)
+        : tipoMedidas === 'tres_areas'
+          ? validateMedidas(medidas1) && validateMedidas(medidas2) && validateMedidas(medidas3)
+          : validateM2Direto(m2Direto);
   const canSubmitForm =
-    (tipoMedidas === 'area_unica' ? validateMedidas(medidas) : validateMedidas(medidas1) && validateMedidas(medidas2)) &&
-    (!isManual || (dimensaoTuboManual.trim().length > 0 && valorM2.length > 0 && parseInt(valorM2, 10) > 0)) &&
+    okMedidasSubmit &&
+    valorM2.length > 0 &&
+    parseInt(valorM2, 10) > 0 &&
+    (!isManual || dimensaoTuboManual.trim().length > 0) &&
     custoDeslocamento.length > 0 &&
     parseInt(custoDeslocamento, 10) >= 0;
 
   return (
-    <div className="min-h-full flex flex-col px-6 py-8 max-w-2xl mx-auto">
+    <div className="min-h-full flex flex-col px-6 py-8 max-w-5xl mx-auto w-full">
       <button
         type="button"
         onClick={onBack}
@@ -120,12 +143,14 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
             options={[
               { value: 'area_unica', label: 'Área única' },
               { value: 'duas_areas', label: 'Duas áreas' },
+              { value: 'tres_areas', label: 'Três áreas' },
+              { value: 'm2_direto', label: 'Informar m² direto' },
             ]}
             value={tipoMedidas}
             onChange={(v) => setTipoMedidas(v as typeof tipoMedidas)}
           />
         </div>
-        {tipoMedidas === 'area_unica' ? (
+        {tipoMedidas === 'area_unica' && (
           <MedidasInput
             id="medidas-pergolado"
             label="Medidas"
@@ -135,7 +160,8 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
             hint="5,00m x 2,00m"
             error={undefined}
           />
-        ) : (
+        )}
+        {tipoMedidas === 'duas_areas' && (
           <>
             <MedidasInput
               id="medidas1-pergolado"
@@ -156,6 +182,58 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
               error={undefined}
             />
           </>
+        )}
+        {tipoMedidas === 'tres_areas' && (
+          <>
+            <MedidasInput
+              id="medidas1-pergolado"
+              label="Área 1 (medidas)"
+              value={medidas1}
+              onChange={setMedidas1}
+              placeholder="5,00m x 2,00m"
+              hint="5,00m x 2,00m"
+              error={undefined}
+            />
+            <MedidasInput
+              id="medidas2-pergolado"
+              label="Área 2 (medidas)"
+              value={medidas2}
+              onChange={setMedidas2}
+              placeholder="3,00m x 4,00m"
+              hint="3,00m x 4,00m"
+              error={undefined}
+            />
+            <MedidasInput
+              id="medidas3-pergolado"
+              label="Área 3 (medidas)"
+              value={medidas3}
+              onChange={setMedidas3}
+              placeholder="2,00m x 2,00m"
+              hint="2,00m x 2,00m"
+              error={undefined}
+            />
+          </>
+        )}
+        {tipoMedidas === 'm2_direto' && (
+          <div>
+            <label htmlFor="m2-direto-pergolado" className="block text-sm font-medium text-white mb-2">
+              Área total (m²)
+            </label>
+            <input
+              id="m2-direto-pergolado"
+              type="text"
+              inputMode="decimal"
+              value={m2Direto}
+              onChange={(e) => setM2Direto(e.target.value)}
+              placeholder="25,50"
+              className="w-full max-w-[200px] py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              aria-invalid={formTouched && !validateM2Direto(m2Direto)}
+            />
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">Ex.: 25,50</p>
+            {formTouched && !validateM2Direto(m2Direto) && m2Direto.trim() !== '' && (
+              <p className="mt-1 text-xs text-amber-400">Informe um valor de m² válido (ex.: 25,50)</p>
+            )}
+          </div>
         )}
       </div>
 
@@ -188,26 +266,44 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
               value={dimensaoTuboManual}
               onChange={(e) => setDimensaoTuboManual(e.target.value)}
               placeholder="120 x 60"
-              className="w-full py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              className="w-full max-w-[200px] py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
               aria-invalid={formTouched && !dimensaoTuboManual.trim()}
             />
             {formTouched && !dimensaoTuboManual.trim() && (
               <p className="mt-1 text-xs text-amber-400">Informe a dimensão do tubo.</p>
             )}
           </div>
-          <CurrencyInput
-            id="valor-m2-pergolado"
-            label="Valor por m²"
-            value={valorM2}
-            onChange={setValorM2}
-            placeholder="1.200,00"
-            hint="R$ 1.200,00"
-          />
         </div>
       )}
 
       {canShowForm && (
         <div className="mt-8 pt-4 border-t border-[var(--color-border)] space-y-6">
+          {valorM2Locked ? (
+            <div className="flex flex-col gap-2">
+              <label className="block text-sm font-medium text-white">Valor por m²</label>
+              <div className="flex gap-2 items-center w-fit">
+                <span id="valor-m2-pergolado" className="py-3 px-0 text-[var(--color-text-muted)]" aria-readonly>
+                  {formatCurrencyDisplay(valorM2)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setValorM2Locked(false)}
+                  className="shrink-0 self-stretch flex items-center px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] text-sm font-medium transition-colors"
+                >
+                  Alterar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <CurrencyInput
+              id="valor-m2-pergolado"
+              label="Valor por m²"
+              value={valorM2}
+              onChange={setValorM2}
+              placeholder="1.200,00"
+              hint="R$ 1.200,00"
+            />
+          )}
           <CurrencyInput
             id="custo-deslocamento-pergolado"
             label="Custo de Deslocamento"
@@ -225,6 +321,25 @@ export function PergoladoScreen({ onBack, onConfirm }: PergoladoScreenProps) {
               </button>
             }
           />
+          <div>
+            <label
+              htmlFor="descricao-adicional-pergolado"
+              className="block text-sm font-medium text-white mb-2"
+            >
+              Descrição Adicional (Opcional)
+            </label>
+            <textarea
+              id="descricao-adicional-pergolado"
+              value={descricaoAdicional}
+              onChange={(e) => setDescricaoAdicional(e.target.value)}
+              placeholder="Ex.: Incluir iluminação LED na estrutura"
+              rows={3}
+              className="w-full py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent resize-y min-h-[80px]"
+            />
+            <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+              O texto informado aqui será exibido exatamente como digitado na planilha do orçamento (célula D44).
+            </p>
+          </div>
           <button
             type="button"
             onClick={handleSubmit}

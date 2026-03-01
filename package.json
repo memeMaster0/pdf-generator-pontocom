@@ -1,7 +1,7 @@
 {
   "name": "pdf-generator",
   "private": true,
-  "version": "1.3.2",
+  "version": "2.4.2",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --config config/vite.config.ts",
@@ -57,6 +57,10 @@
       {
         "from": "resources/PROPOSTA  - COBERTURA RETRÁTIL.xlsx",
         "to": "resources/PROPOSTA  - COBERTURA RETRÁTIL.xlsx"
+      },
+      {
+        "from": "resources/PROPOSTA  - PORTA.xlsx",
+        "to": "resources/PROPOSTA  - PORTA.xlsx"
       },
       {
         "from": "build/icon.ico",

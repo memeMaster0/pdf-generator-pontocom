@@ -2,7 +2,7 @@ import { useCoberturaRetratil } from '../context/CoberturaRetratilContext';
 import type { CoberturaRetratilFormData } from '../context/CoberturaRetratilContext';
 import { StepButtons } from '../components/StepButtons';
 import { CurrencyInput, formatCurrencyDisplay } from '../components/CurrencyInput';
-import { MedidasInput, validateMedidas } from '../components/MedidasInput';
+import { MedidasInput, validateMedidas, validateM2Direto } from '../components/MedidasInput';
 
 interface CoberturaRetratilScreenProps {
   onBack: () => void;
@@ -22,6 +22,8 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     medidas,
     medidas1,
     medidas2,
+    medidas3,
+    m2Direto,
     valorM2,
     valorM2Locked,
     custoAberturaAutomatizada,
@@ -37,6 +39,8 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     setMedidas,
     setMedidas1,
     setMedidas2,
+    setMedidas3,
+    setM2Direto,
     setValorM2,
     setValorM2Locked,
     setCustoAberturaAutomatizada,
@@ -60,7 +64,11 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     const okMedidas =
       tipoMedidas === 'area_unica'
         ? validateMedidas(medidas)
-        : validateMedidas(medidas1) && validateMedidas(medidas2);
+        : tipoMedidas === 'duas_areas'
+          ? validateMedidas(medidas1) && validateMedidas(medidas2)
+          : tipoMedidas === 'tres_areas'
+            ? validateMedidas(medidas1) && validateMedidas(medidas2) && validateMedidas(medidas3)
+            : validateM2Direto(m2Direto);
     const okValorM2 =
       valorM2Locked || (valorM2.length > 0 && parseInt(valorM2, 10) > 0);
     const okDeslocamento = custoDeslocamento.length > 0 && parseInt(custoDeslocamento, 10) >= 0;
@@ -73,8 +81,16 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
     onConfirm(data);
   };
 
+  const okMedidasSubmit =
+    tipoMedidas === 'area_unica'
+      ? validateMedidas(medidas)
+      : tipoMedidas === 'duas_areas'
+        ? validateMedidas(medidas1) && validateMedidas(medidas2)
+        : tipoMedidas === 'tres_areas'
+          ? validateMedidas(medidas1) && validateMedidas(medidas2) && validateMedidas(medidas3)
+          : validateM2Direto(m2Direto);
   const canSubmitForm =
-    (tipoMedidas === 'area_unica' ? validateMedidas(medidas) : validateMedidas(medidas1) && validateMedidas(medidas2)) &&
+    okMedidasSubmit &&
     (valorM2Locked || (valorM2.length > 0 && parseInt(valorM2, 10) > 0)) &&
     custoDeslocamento.length > 0 &&
     parseInt(custoDeslocamento, 10) >= 0 &&
@@ -82,7 +98,7 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
       (custoAberturaAutomatizada.length > 0 && parseInt(custoAberturaAutomatizada, 10) >= 0));
 
   return (
-    <div className="min-h-full flex flex-col px-6 py-8 max-w-2xl mx-auto">
+    <div className="min-h-full flex flex-col px-6 py-8 max-w-5xl mx-auto w-full">
       <button
         type="button"
         onClick={onBack}
@@ -169,7 +185,7 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
                   value={corEstruturaOutra}
                   onChange={(e) => setCorEstruturaOutra(e.target.value)}
                   placeholder="ex: cinza"
-                  className="w-full py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+                  className="w-full max-w-[480px] py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
                   aria-invalid={formTouched && step4 === 'Outra' && !corEstruturaOutra.trim()}
                 />
                 {formTouched && step4 === 'Outra' && !corEstruturaOutra.trim() && (
@@ -227,13 +243,15 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
               options={[
                 { value: 'area_unica', label: 'Área única' },
                 { value: 'duas_areas', label: 'Duas áreas' },
+                { value: 'tres_areas', label: 'Três áreas' },
+                { value: 'm2_direto', label: 'Informar m² direto' },
               ]}
               value={tipoMedidas}
               onChange={(v) => setTipoMedidas(v as typeof tipoMedidas)}
             />
           </div>
 
-          {tipoMedidas === 'area_unica' ? (
+          {tipoMedidas === 'area_unica' && (
             <MedidasInput
               id="medidas"
               label="Medidas"
@@ -243,7 +261,8 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
               hint="5,00m x 2,00m"
               error={undefined}
             />
-          ) : (
+          )}
+          {tipoMedidas === 'duas_areas' && (
             <>
               <MedidasInput
                 id="medidas1"
@@ -265,19 +284,66 @@ export function CoberturaRetratilScreen({ onBack, onConfirm }: CoberturaRetratil
               />
             </>
           )}
+          {tipoMedidas === 'tres_areas' && (
+            <>
+              <MedidasInput
+                id="medidas1"
+                label="Área 1 (medidas)"
+                value={medidas1}
+                onChange={setMedidas1}
+                placeholder="5,00m x 2,00m"
+                hint="5,00m x 2,00m"
+                error={undefined}
+              />
+              <MedidasInput
+                id="medidas2"
+                label="Área 2 (medidas)"
+                value={medidas2}
+                onChange={setMedidas2}
+                placeholder="3,00m x 4,00m"
+                hint="3,00m x 4,00m"
+                error={undefined}
+              />
+              <MedidasInput
+                id="medidas3"
+                label="Área 3 (medidas)"
+                value={medidas3}
+                onChange={setMedidas3}
+                placeholder="2,00m x 2,00m"
+                hint="2,00m x 2,00m"
+                error={undefined}
+              />
+            </>
+          )}
+          {tipoMedidas === 'm2_direto' && (
+            <div>
+              <label htmlFor="m2-direto-retratil" className="block text-sm font-medium text-white mb-2">
+                Área total (m²)
+              </label>
+              <input
+                id="m2-direto-retratil"
+                type="text"
+                inputMode="decimal"
+                value={m2Direto}
+                onChange={(e) => setM2Direto(e.target.value)}
+                placeholder="25,50"
+                className="w-full max-w-[200px] py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+                aria-invalid={formTouched && !validateM2Direto(m2Direto)}
+              />
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">Ex.: 25,50</p>
+              {formTouched && !validateM2Direto(m2Direto) && m2Direto.trim() !== '' && (
+                <p className="mt-1 text-xs text-amber-400">Informe um valor de m² válido (ex.: 25,50)</p>
+              )}
+            </div>
+          )}
 
           {valorM2Locked ? (
             <div className="flex flex-col gap-2">
               <label className="block text-sm font-medium text-white">Valor por m²</label>
-              <div className="flex gap-2">
-                <input
-                  id="valor-m2"
-                  type="text"
-                  readOnly
-                  value={formatCurrencyDisplay(valorM2)}
-                  className="flex-1 py-3 px-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] text-white cursor-default"
-                  aria-readonly
-                />
+              <div className="flex gap-2 items-center w-fit">
+                <span id="valor-m2" className="py-3 px-0 text-[var(--color-text-muted)]" aria-readonly>
+                  {formatCurrencyDisplay(valorM2)}
+                </span>
                 <button
                   type="button"
                   onClick={() => setValorM2Locked(false)}
