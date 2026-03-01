@@ -7,10 +7,10 @@
     "dev": "vite --config config/vite.config.ts",
     "build": "tsc -b config/tsconfig.json && vite build --config config/vite.config.ts",
     "preview": "vite preview --config config/vite.config.ts",
-    "electron:dev": "tsc -p config/tsconfig.electron.json && concurrently \"vite --config config/vite.config.ts\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "tsc -p config/tsconfig.electron.json && vite build --config config/vite.config.ts && electron-builder",
+    "electron:dev": "tsc -p config/tsconfig.electron.json && copy electron\\blocked.html dist-electron\\blocked.html && concurrently \"vite --config config/vite.config.ts\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "tsc -p config/tsconfig.electron.json && copy electron\\blocked.html dist-electron\\blocked.html && vite build --config config/vite.config.ts && electron-builder",
     "build:icons": "node scripts/build-icons.js",
-    "electron:build:win": "npm run build:icons && call pdf_export\\build_exe.bat && tsc -p config/tsconfig.electron.json && vite build --config config/vite.config.ts && electron-builder --win"
+    "electron:build:win": "npm run build:icons && call pdf_export\\build_exe.bat && tsc -p config/tsconfig.electron.json && copy electron\\blocked.html dist-electron\\blocked.html && vite build --config config/vite.config.ts && electron-builder --win"
   },
   "dependencies": {
     "react": "^18.2.0",

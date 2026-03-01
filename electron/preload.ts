@@ -5,4 +5,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.send('window:minimize'),
   maximizeWindow: () => ipcRenderer.send('window:maximize'),
   generatePdf: (data: Record<string, unknown>) => ipcRenderer.invoke('generate-pdf', data),
+  retryKillSwitch: () => ipcRenderer.invoke('killswitch:retry'),
 });

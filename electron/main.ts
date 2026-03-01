@@ -3,10 +3,11 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { checkKillSwitch } from './killswitch';
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
-function createWindow(): void {
+async function createWindow(): Promise<void> {
   // Ícone: no empacotado use process.resourcesPath (pasta onde extraResources são copiados)
   let iconPath: string;
   if (app.isPackaged) {
@@ -149,11 +150,37 @@ function createWindow(): void {
     };
   });
 
+  const loadApp = () => {
+    if (isDev) {
+      mainWindow.loadURL('http://localhost:5173');
+    } else {
+      mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    }
+  };
+
+  const loadBlocked = () => {
+    mainWindow.loadFile(path.join(__dirname, 'blocked.html'));
+  };
+
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    loadApp();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    const isAllowed = await checkKillSwitch();
+    if (isAllowed) {
+      loadApp();
+    } else {
+      loadBlocked();
+    }
   }
+
+  ipcMain.handle('killswitch:retry', async () => {
+    const isAllowed = await checkKillSwitch();
+    if (isAllowed) {
+      loadApp();
+      return { allowed: true };
+    }
+    return { allowed: false };
+  });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
