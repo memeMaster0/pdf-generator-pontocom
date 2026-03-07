@@ -1,5 +1,27 @@
 # Release – Resumo das alterações
 
+## Hub Pontocom e Calculadora de Peso
+
+O aplicativo passa a se chamar **Hub Pontocom**. Ao abrir, você vê uma tela inicial com duas opções: **Calculadora de Peso** e **Gerador de PDF**. O fluxo do Gerador de PDF permanece igual: ao escolher essa opção, você acessa os orçamentos de Cobertura Premium, Pergolado, Cobertura Retrátil e Porta, e pode voltar à tela inicial a qualquer momento pelo botão “Voltar”.
+
+### Nova ferramenta: Calculadora de Peso
+
+Uma nova ferramenta apenas de cálculo, sem planilhas nem PDF. Você informa:
+
+- **Medidas** (largura × altura em mm), **metros lineares** e o tipo de **chapa** (#12, #13, #14, #16 ou #18).
+
+A calculadora mostra o **peso total em kg**. Em seguida você escolhe o **valor por kg** (R$) e o **valor por metro da pintura** (R$). Ao final são exibidos o valor total da estrutura, o valor total da pintura e o **valor total geral**.
+
+Nas **configurações** (ícone de engrenagem no canto superior direito da calculadora) é possível alterar o “Valor da Massa” usado no cálculo (o padrão é 8).
+
+### Ajustes de interface
+
+- Na tela inicial do Hub, os dois cards (Calculadora de Peso e Gerador de PDF) ficam centralizados na tela.
+- Na Calculadora de Peso, os campos e resultados ficam centralizados e com tamanho alinhado ao restante do aplicativo.
+- Os campos numéricos não exibem mais as setinhas de subir/descer ao lado, deixando a tela mais limpa.
+
+---
+
 ## Novo produto: Porta
 
 O aplicativo passa a oferecer orçamento para **portas**, no mesmo fluxo dos demais produtos: escolha do produto na tela inicial, preenchimento do orçamento, dados do cliente, confirmação e geração do PDF.

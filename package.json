@@ -1,7 +1,7 @@
 {
   "name": "pdf-generator",
   "private": true,
-  "version": "3.5.3",
+  "version": "4.6.0",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --config config/vite.config.ts",
@@ -32,8 +32,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.pdfgenerator.app",
-    "productName": "PDF Generator",
+    "appId": "com.hubpontocom.app",
+    "productName": "Hub Pontocom",
     "directories": {
       "output": "release"
     },

@@ -4,6 +4,8 @@ import { PergoladoProvider, usePergolado } from './context/PergoladoContext';
 import { CoberturaRetratilProvider, useCoberturaRetratil } from './context/CoberturaRetratilContext';
 import { PortaProvider, usePorta } from './context/PortaContext';
 import { TitleBar } from './components/TitleBar';
+import { HubScreen } from './screens/HubScreen';
+import { CalculadoraPesoScreen } from './screens/CalculadoraPesoScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { CoberturaPremiumScreen } from './screens/CoberturaPremiumScreen';
 import { PergoladoScreen } from './screens/PergoladoScreen';
@@ -17,7 +19,7 @@ import type { CoberturaRetratilFormData } from './context/CoberturaRetratilConte
 import type { PortaFormData } from './context/PortaContext';
 import type { ClienteFormData } from './screens/ClienteScreen';
 
-export type Screen = 'home' | 'cobertura' | 'pergolado' | 'cobertura_retratil' | 'porta' | 'cliente' | 'confirmacao';
+export type Screen = 'hub' | 'calculadora_peso' | 'home' | 'cobertura' | 'pergolado' | 'cobertura_retratil' | 'porta' | 'cliente' | 'confirmacao';
 
 export type TipoOrcamento = 'cobertura' | 'pergolado' | 'cobertura_retratil' | 'porta';
 
@@ -27,7 +29,7 @@ const NOME_ORCAMENTO_COBERTURA_RETRATIL = 'Cobertura Retrátil';
 const NOME_ORCAMENTO_PORTA = 'Porta';
 
 function AppContent() {
-  const [screen, setScreen] = useState<Screen>('home');
+  const [screen, setScreen] = useState<Screen>('hub');
   const [tipoOrcamento, setTipoOrcamento] = useState<TipoOrcamento | null>(null);
   const [confirmacaoData, setConfirmacaoData] = useState<
     CoberturaFormData | PergoladoFormData | CoberturaRetratilFormData | PortaFormData | null
@@ -37,6 +39,17 @@ function AppContent() {
   const { reset: resetPergolado } = usePergolado();
   const { reset: resetCoberturaRetratil } = useCoberturaRetratil();
   const { reset: resetPorta } = usePorta();
+
+  const goHub = () => {
+    setScreen('hub');
+    setTipoOrcamento(null);
+    setConfirmacaoData(null);
+    setClienteData(null);
+  };
+
+  const goToCalculadoraPeso = () => setScreen('calculadora_peso');
+
+  const goToGeradorPdf = () => setScreen('home');
 
   const goHome = () => {
     setScreen('home');
@@ -103,8 +116,18 @@ function AppContent() {
         <TitleBar />
       </header>
       <div className="flex-1 min-h-0 overflow-y-auto">
+        {screen === 'hub' && (
+          <HubScreen
+            onCalculadoraPeso={goToCalculadoraPeso}
+            onGeradorPdf={goToGeradorPdf}
+          />
+        )}
+        {screen === 'calculadora_peso' && (
+          <CalculadoraPesoScreen onBack={goHub} />
+        )}
         {screen === 'home' && (
           <HomeScreen
+            onBack={goHub}
             onCoberturaPremium={goToCobertura}
             onPergolado={goToPergolado}
             onCoberturaRetratil={goToCoberturaRetratil}
